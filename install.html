@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Instalar o Plotti</title>
+<meta name="description" content="Instale o Plotti como app no seu celular em 2 toques.">
+<meta name="theme-color" content="#3F5B47">
+<!-- Nome do ícone na tela de início — sempre "Plotti", não o título desta página -->
+<meta name="apple-mobile-web-app-title" content="Plotti">
+<meta name="application-name" content="Plotti">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" type="image/svg+xml" href="icons/plotti/plotti-simbolo.svg">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icons/apple-touch-icon-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/apple-touch-icon-152.png">
+<link rel="apple-touch-icon" sizes="120x120" href="icons/apple-touch-icon-120.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  :root{
+    --canvas:#F6F0E1; --surface:#FFFCF5; --surface-2:#EFE7D2;
+    --ink:#1F1A14; --ink-soft:#5C5246; --ink-muted:#665C4D; --line:#E8DFC8;
+    --olive:#3F5B47; --olive-dark:#2A3F31;
+    --terra:#C25E3D; --terra-dark:#8E3F25; --terra-50:#F7E6DC;
+    --gold:#D4A85F;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --canvas:#1F1A14; --surface:#2A241B; --surface-2:#332B20; --ink:#F6F0E1; --ink-soft:#D4CCB8; --ink-muted:#A89F89; --line:#3A3225; }
+  }
+  html,body{min-height:100vh;min-height:100dvh}
+  body{
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    color:var(--ink); background:var(--canvas);
+    line-height:1.55;
+    padding:max(24px,env(safe-area-inset-top)) 20px calc(40px + env(safe-area-inset-bottom));
+    display:flex; flex-direction:column; align-items:center;
+  }
+  .wrap{ width:100%; max-width:560px; }
+  .brand{ display:flex; align-items:center; gap:12px; margin-bottom:32px; }
+  .brand-mark{
+    width:44px; height:44px; border-radius:12px; background:var(--olive);
+    display:flex; align-items:center; justify-content:center;
+    color:#FFFCF5; font-family:'Fraunces',serif; font-size:26px; font-weight:700;
+    position:relative;
+  }
+  .brand-mark::after{
+    content:""; position:absolute; right:-3px; bottom:-3px;
+    width:10px; height:10px; border-radius:50%; background:var(--terra);
+    border:2px solid var(--canvas);
+  }
+  .brand-text strong{ font-family:'Fraunces',serif; font-size:24px; font-weight:700; letter-spacing:-0.01em; display:block; }
+  .brand-text span{ font-size:12px; color:var(--ink-muted); letter-spacing:.05em; text-transform:uppercase; }
+
+  h1{ font-family:'Fraunces',serif; font-weight:600; font-size:clamp(26px,6vw,34px); line-height:1.15; letter-spacing:-0.015em; margin-bottom:10px; }
+  .lead{ color:var(--ink-soft); font-size:15.5px; margin-bottom:24px; }
+
+  .card{
+    background:var(--surface); border:1px solid var(--line); border-radius:18px;
+    padding:22px 20px; margin-bottom:14px;
+    box-shadow:0 1px 2px rgba(31,26,20,.04);
+  }
+  .card h2{ font-family:'Fraunces',serif; font-weight:600; font-size:18px; margin-bottom:8px; }
+  .card p{ font-size:14.5px; color:var(--ink-soft); }
+  .card + .card{ margin-top:0; }
+
+  .step{ display:flex; gap:14px; align-items:flex-start; padding:14px 0; border-top:1px dashed var(--line); }
+  .step:first-of-type{ border-top:none; padding-top:6px; }
+  .step-num{
+    flex-shrink:0; width:30px; height:30px; border-radius:50%;
+    background:var(--olive); color:#FFFCF5;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces',serif; font-weight:700; font-size:15px;
+  }
+  .step-body strong{ display:block; font-weight:600; margin-bottom:3px; color:var(--ink); }
+  .step-body span{ font-size:14px; color:var(--ink-soft); }
+  .step-body .ico{ display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; vertical-align:-7px; margin:0 2px; background:var(--surface-2); border-radius:6px; padding:3px; }
+  .step-body .ico svg{ width:100%; height:100%; }
+
+  .cta{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    width:100%; padding:15px 18px; border-radius:14px;
+    background:var(--olive); color:#FFFCF5; font-weight:600; font-size:16px;
+    border:none; cursor:pointer; text-decoration:none;
+    transition:background .2s, transform .1s;
+  }
+  .cta:hover{ background:var(--olive-dark); }
+  .cta:active{ transform:scale(.98); }
+  .cta.secondary{ background:transparent; color:var(--olive); border:1.5px solid var(--olive); margin-top:10px; }
+  .cta svg{ width:20px; height:20px; }
+
+  .alert{
+    background:var(--terra-50); border:1px solid var(--terra); border-radius:12px;
+    padding:14px 16px; font-size:14px; color:var(--terra-dark); margin-bottom:14px;
+    display:flex; gap:10px; align-items:flex-start;
+  }
+  .alert svg{ flex-shrink:0; width:20px; height:20px; margin-top:1px; }
+
+  .ok-badge{
+    background:#E4EDE2; color:#2A3F31; border-radius:999px;
+    padding:6px 14px; font-size:12.5px; font-weight:600; display:inline-flex; gap:6px; align-items:center;
+  }
+  .ok-badge svg{ width:14px; height:14px; }
+
+  .foot{
+    margin-top:24px; padding-top:18px; border-top:1px dashed var(--line);
+    font-size:12.5px; color:var(--ink-muted); text-align:center; line-height:1.6;
+  }
+  .foot a{ color:var(--olive); text-decoration:none; }
+  .foot a:hover{ text-decoration:underline; }
+
+  /* iOS share icon — render fiel */
+  .ios-share{ display:inline-flex; align-items:center; vertical-align:-7px; }
+  .ios-share svg{ width:26px; height:26px; color:#0a84ff; }
+
+  .hide{ display:none !important; }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <div class="brand">
+    <div class="brand-mark" aria-hidden="true">P</div>
+    <div class="brand-text">
+      <strong>Plotti</strong>
+      <span>viagem em grupo</span>
+    </div>
+  </div>
+
+  <div id="content"></div>
+
+  <div class="foot">
+    Já instalou e quer só abrir? <a href="./" id="open-app">Abrir o Plotti</a><br>
+    Plotti funciona como app nativo (offline, tela cheia, ícone próprio) sem App Store.
+  </div>
+
+</main>
+
+<script>
+(function(){
+  var content = document.getElementById('content');
+
+  // ----- Detecção -----
+  var ua = navigator.userAgent || '';
+  var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  var isIOS = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document);
+  var isAndroid = /Android/.test(ua);
+  // In-app browsers no iOS (sem "Adicionar à Tela de Início"):
+  var isWhatsApp  = /WhatsApp/i.test(ua);
+  var isInstagram = /Instagram/i.test(ua);
+  var isFacebook  = /(FBAN|FBAV|FB_IAB)/i.test(ua);
+  var isLine      = /Line\//i.test(ua);
+  var isMessenger = /Messenger/i.test(ua);
+  var isInAppIOS  = isIOS && (isWhatsApp || isInstagram || isFacebook || isLine || isMessenger);
+  // Navegadores não-Safari no iOS (Chrome/Firefox/Edge no iPhone — também não instalam):
+  var isChromeIOS = isIOS && /CriOS/.test(ua);
+  var isFirefoxIOS= isIOS && /FxiOS/.test(ua);
+  var isEdgeIOS   = isIOS && /EdgiOS/.test(ua);
+  var isNonSafariIOS = isIOS && (isChromeIOS || isFirefoxIOS || isEdgeIOS || isInAppIOS);
+  var isSafariIOS = isIOS && !isNonSafariIOS;
+  // Android Chrome (suporta beforeinstallprompt):
+  var isAndroidChrome = isAndroid && /Chrome/.test(ua) && !/SamsungBrowser|EdgA|OPR/.test(ua);
+
+  // Já instalado → abrir o app
+  if(standalone){ location.replace('./'); return; }
+
+  // ----- SVG helpers -----
+  var iosShareSvg = '<svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M25 33V8M25 8l-8 8m8-8l8 8" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 22h-3a3 3 0 0 0-3 3v15a3 3 0 0 0 3 3h28a3 3 0 0 0 3-3V25a3 3 0 0 0-3-3h-3" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var plusSquareSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg>';
+  var infoSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>';
+  var dotsSvg = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="6" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="18" r="2"/></svg>';
+  var checkSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+
+  // ----- Fluxos -----
+  function renderInAppIOS(){
+    var appName = isWhatsApp ? 'WhatsApp'
+                : isInstagram ? 'Instagram'
+                : isFacebook ? 'Facebook'
+                : isLine ? 'LINE'
+                : isMessenger ? 'Messenger'
+                : 'app';
+    content.innerHTML =
+      '<h1>Antes, abra no Safari</h1>'+
+      '<p class="lead">Você abriu pelo <strong>'+appName+'</strong>. O navegador interno dele não consegue instalar apps. Faça este desvio rápido e estamos prontos.</p>'+
+      '<div class="alert">'+infoSvg+'<div><strong>Por quê?</strong> O iPhone só permite "Adicionar à Tela de Início" pelo Safari. É regra da Apple.</div></div>'+
+      '<div class="card">'+
+        '<div class="step"><div class="step-num">1</div><div class="step-body"><strong>Toque no menu</strong><span>Procure os três pontinhos <span class="ico">'+dotsSvg+'</span> (ou ícone de compartilhar) aqui na tela do '+appName+'.</span></div></div>'+
+        '<div class="step"><div class="step-num">2</div><div class="step-body"><strong>"Abrir em Safari"</strong><span>Toque nessa opção. A mesma página vai abrir, agora no navegador certo.</span></div></div>'+
+        '<div class="step"><div class="step-num">3</div><div class="step-body"><strong>Siga as instruções de instalação</strong><span>Esta página vai mudar e mostrar o passo de "Adicionar à Tela de Início".</span></div></div>'+
+      '</div>';
+  }
+
+  function renderNonSafariIOS(){
+    var browser = isChromeIOS ? 'Chrome' : isFirefoxIOS ? 'Firefox' : isEdgeIOS ? 'Edge' : 'este navegador';
+    content.innerHTML =
+      '<h1>Use o Safari para instalar</h1>'+
+      '<p class="lead">Você está no <strong>'+browser+'</strong> do iPhone. Por regra da Apple, só o <strong>Safari</strong> consegue adicionar apps à tela de início.</p>'+
+      '<div class="card">'+
+        '<div class="step"><div class="step-num">1</div><div class="step-body"><strong>Copie o endereço desta página</strong><span>Toque no campo do endereço lá em cima e copie a URL.</span></div></div>'+
+        '<div class="step"><div class="step-num">2</div><div class="step-body"><strong>Abra o Safari</strong><span>Aquele aplicativo padrão do iPhone, ícone azul de bússola.</span></div></div>'+
+        '<div class="step"><div class="step-num">3</div><div class="step-body"><strong>Cole o endereço e abra</strong><span>Esta mesma página vai aparecer, com o passo de instalação.</span></div></div>'+
+      '</div>'+
+      '<button class="cta secondary" id="btn-copy-url">Copiar endereço desta página</button>';
+    var b = document.getElementById('btn-copy-url');
+    if(b) b.addEventListener('click', function(){
+      var url = location.href;
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(url).then(
+          function(){ b.textContent = 'Endereço copiado ✓'; },
+          function(){ prompt('Copie manualmente:', url); }
+        );
+      } else { prompt('Copie manualmente:', url); }
+    });
+  }
+
+  function renderSafariIOS(){
+    content.innerHTML =
+      '<h1>Instale o Plotti em 3 toques</h1>'+
+      '<p class="lead">Vira ícone na sua tela, abre em tela cheia, funciona offline. Sem App Store, sem custo.</p>'+
+      '<div class="card">'+
+        '<div class="step"><div class="step-num">1</div><div class="step-body"><strong>Toque no botão Compartilhar</strong><span>É o ícone <span class="ios-share">'+iosShareSvg+'</span> na barra de baixo do Safari (ou no topo, se o seu iPhone for mais novo).</span></div></div>'+
+        '<div class="step"><div class="step-num">2</div><div class="step-body"><strong>Role e toque em "Adicionar à Tela de Início"</strong><span>Aparece o ícone <span class="ico">'+plusSquareSvg+'</span> ao lado. Pode estar na metade da lista.</span></div></div>'+
+        '<div class="step"><div class="step-num">3</div><div class="step-body"><strong>Toque em "Adicionar"</strong><span>O Plotti aparece na sua tela como um app. Toque nele para abrir.</span></div></div>'+
+      '</div>'+
+      '<div class="alert" style="background:#E4EDE2;border-color:#4C7A4F;color:#2A3F31;">'+checkSvg+'<div><strong>Pronto.</strong> Da próxima vez, é só tocar no ícone — não precisa abrir o Safari.</div></div>';
+  }
+
+  function renderAndroidChrome(){
+    content.innerHTML =
+      '<h1>Instalar o Plotti</h1>'+
+      '<p class="lead">Um toque e vira app na sua gaveta. Funciona offline e em tela cheia.</p>'+
+      '<button class="cta" id="btn-install"><span>Instalar agora</span></button>'+
+      '<div id="install-status"></div>'+
+      '<div class="card hide" id="manual-card">'+
+        '<h2>Se o botão acima não funcionou:</h2>'+
+        '<div class="step"><div class="step-num">1</div><div class="step-body"><strong>Toque no menu do Chrome</strong><span>Três pontinhos <span class="ico">'+dotsSvg+'</span> no canto superior direito.</span></div></div>'+
+        '<div class="step"><div class="step-num">2</div><div class="step-body"><strong>"Instalar app" ou "Adicionar à tela inicial"</strong><span>Pode estar na metade da lista.</span></div></div>'+
+        '<div class="step"><div class="step-num">3</div><div class="step-body"><strong>Confirme</strong><span>O Plotti vira ícone na sua gaveta.</span></div></div>'+
+      '</div>';
+
+    var deferred = null;
+    var btn = document.getElementById('btn-install');
+    var status = document.getElementById('install-status');
+    var manual = document.getElementById('manual-card');
+
+    window.addEventListener('beforeinstallprompt', function(e){
+      e.preventDefault();
+      deferred = e;
+    });
+    window.addEventListener('appinstalled', function(){
+      status.innerHTML = '<div class="alert" style="background:#E4EDE2;border-color:#4C7A4F;color:#2A3F31;margin-top:12px;">'+checkSvg+'<div><strong>Instalado!</strong> Procure o ícone Plotti na sua tela inicial.</div></div>';
+      btn.style.display = 'none';
+    });
+
+    btn.addEventListener('click', function(){
+      if(deferred){
+        deferred.prompt();
+        deferred.userChoice.then(function(r){
+          if(r.outcome !== 'accepted'){
+            status.innerHTML = '<p style="margin-top:10px;font-size:13px;color:var(--ink-muted)">Sem problemas — pode instalar depois pelo menu.</p>';
+            manual.classList.remove('hide');
+          }
+          deferred = null;
+        });
+      } else {
+        // Chrome não disparou beforeinstallprompt — mostrar passo a passo manual
+        manual.classList.remove('hide');
+        status.innerHTML = '<p style="margin-top:10px;font-size:13px;color:var(--ink-muted)">O Chrome não ofereceu o instalador automático. Use o passo a passo abaixo.</p>';
+      }
+    });
+
+    // Se em 1500ms beforeinstallprompt não veio, mostra manual desde o início
+    setTimeout(function(){ if(!deferred && manual.classList.contains('hide')){ /* mantém oculto até clique para não poluir */ } }, 1500);
+  }
+
+  function renderAndroidOther(){
+    content.innerHTML =
+      '<h1>Instalar pelo Chrome</h1>'+
+      '<p class="lead">Você está num navegador que não tem instalador rápido. O caminho mais simples é abrir esta página no <strong>Chrome</strong> do Android — ele tem o botão "Instalar app" pronto.</p>'+
+      '<div class="card">'+
+        '<div class="step"><div class="step-num">1</div><div class="step-body"><strong>Copie o endereço</strong><span>Toque na URL acima e copie.</span></div></div>'+
+        '<div class="step"><div class="step-num">2</div><div class="step-body"><strong>Abra o Chrome</strong><span>Cole e abra esta mesma página.</span></div></div>'+
+        '<div class="step"><div class="step-num">3</div><div class="step-body"><strong>Toque no botão "Instalar"</strong><span>Vai aparecer um botão grande para instalar em 1 toque.</span></div></div>'+
+      '</div>'+
+      '<button class="cta secondary" id="btn-copy-url">Copiar endereço</button>';
+    var b = document.getElementById('btn-copy-url');
+    if(b) b.addEventListener('click', function(){
+      var url = location.href;
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(url).then(
+          function(){ b.textContent = 'Endereço copiado ✓'; },
+          function(){ prompt('Copie manualmente:', url); }
+        );
+      } else { prompt('Copie manualmente:', url); }
+    });
+  }
+
+  function renderDesktop(){
+    var siteUrl = location.origin + location.pathname.replace(/install\.html$/, '');
+    content.innerHTML =
+      '<h1>Plotti instala no celular</h1>'+
+      '<p class="lead">Você está no computador. O Plotti pode até abrir aqui, mas o melhor é instalar no celular — vira ícone, abre em tela cheia, funciona offline na rua.</p>'+
+      '<div class="card">'+
+        '<h2>Pelo celular</h2>'+
+        '<p>Abra <strong>'+siteUrl+'install.html</strong> no Safari (iPhone) ou Chrome (Android) e siga o passo a passo automático.</p>'+
+      '</div>'+
+      '<a class="cta" href="./">Abrir o Plotti aqui mesmo</a>';
+  }
+
+  // ----- Roteamento -----
+  if(isInAppIOS){ renderInAppIOS(); }
+  else if(isNonSafariIOS){ renderNonSafariIOS(); }
+  else if(isSafariIOS){ renderSafariIOS(); }
+  else if(isAndroidChrome){ renderAndroidChrome(); }
+  else if(isAndroid){ renderAndroidOther(); }
+  else { renderDesktop(); }
+
+  // Registrar SW para a próxima visita já abrir offline e detectar standalone
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./sw.js').catch(function(){});
+  }
+})();
+</script>
+</body>
+</html>

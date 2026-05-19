@@ -1112,7 +1112,7 @@
           '<a class="tl-action" target="_blank" href="https://secure.splitwise.com">'+ic('web')+'<span>Abrir Splitwise</span></a></div></div>'+
 
         '<div class="tl-card" style="margin-top:14px"><div class="eyebrow">'+ic('clock')+' Google Calendar</div>'+
-          '<p class="text-soft text-small" style="margin-top:6px">Manda os 47 eventos do roteiro para o seu calendário. O .ics funciona em qualquer iPhone, sem login.</p>'+
+          '<p class="text-soft text-small" style="margin-top:6px">Manda os 47 eventos do roteiro para o seu calendário, <strong>já com lembrete que toca antes</strong> (30 min antes; 3 h antes em voos, check-in e reservas) — funciona com o app fechado, offline e sem login, em qualquer iPhone.</p>'+
           '<div class="tl-actions"><button class="tl-action primary" id="cal-ics">'+ic('doc')+'<span>Baixar .ics (roteiro)</span></button>'+
           '<button class="tl-action" data-sub="google">'+ic('arrowR')+'<span>Opções Google</span></button></div></div>'+
 
@@ -1189,7 +1189,11 @@
       if($('#cl-welcome-g')) return;
       var head=w.querySelector('.welcome-head');
       if(!head) return;
-      // SEMPRE só o botão Google: esconde grade de perfis, "visita" e o botão Google legado.
+      // Sem Firebase configurado (link puro): NÃO sequestrar a tela.
+      // Mantém o modo nativo documentado — escolher perfil e entrar offline,
+      // sem dead-end de "configure o Firebase" e sem abrir Nuvem & Login.
+      if(!fbCfg()) return;
+      // Com Firebase (via link de convite): só o botão Google — esconde grade de perfis, "visita" e o botão Google legado.
       var g=$('#welcome-grid'); if(g) g.style.display='none';
       var gb=$('#btn-google-welcome'); if(gb){ var gw=gb.parentNode; (gw||gb).style.display='none'; }
       var foot=w.querySelector('.welcome-foot'); if(foot) foot.style.display='none';

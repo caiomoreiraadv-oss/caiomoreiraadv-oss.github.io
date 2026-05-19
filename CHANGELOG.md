@@ -1,5 +1,64 @@
 # PT-2026 · Changelog
 
+## v6.6 · 19 maio 2026 · Assistente de instalação (install.html)
+
+- Nova página `install.html` — o link "para virar app na tela do celular". Detecta sozinho o aparelho/navegador e mostra o caminho certo:
+  - **Safari no iPhone:** passo a passo com o ícone real do Compartilhar e "Adicionar à Tela de Início".
+  - **WhatsApp/Instagram/Facebook/Messenger/LINE no iPhone:** avisa "abra no Safari primeiro" e ensina como.
+  - **Chrome/Firefox/Edge no iPhone:** explica que a Apple só deixa instalar pelo Safari e oferece copiar o endereço.
+  - **Chrome no Android:** botão "Instalar agora" que aciona o instalador nativo (`beforeinstallprompt`); fallback manual se o Chrome não oferecer.
+  - **Outros navegadores no Android:** instrui a abrir no Chrome.
+  - **Desktop:** explica que o melhor é instalar pelo celular e dá link direto.
+- **Já instalado** (`display-mode: standalone`): redireciona direto para o app, sem mostrar instruções.
+- Página única, autônoma, mesmo estilo do app (Fraunces + Inter, paleta Plotti, dark mode automático).
+- Adicionada ao precache do service worker (abre offline na segunda visita).
+- Link para compartilhar: `https://caiomoreiraadv-oss.github.io/install.html` — esse é o link "em ponto de bala".
+
+**Honesto sobre a limitação da Apple:** não existe API que instale o PWA sozinho no iPhone — é regra da Apple, vale para qualquer PWA. O assistente faz o máximo possível: caminho certo em 2-3 toques, sem o usuário ficar perdido em qual botão tocar.
+
+## v6.5 · 19 maio 2026 · App em branco (genérico) — Etapa 1
+
+- **Conteúdo de Portugal removido:** `TRIP`, `HOTELS`, `DAYS`, `EVENTS`, `CONTATOS`, `BOARD_STOPS`, `MISSIONS`, `COMPAT` esvaziados. Nada de viagem pré-preenchido (o conteúdo segue salvo no histórico do Git).
+- **Dias gerados pelo usuário:** `DAYS` agora é derivado em runtime do período que você cadastra (`syncDays()` a partir de `state.x2.trip`). `currentDayNum()` à prova de viagem vazia.
+- **Tela Hoje refeita:** estado em branco mostra um hero "Crie a sua viagem"; o card "Cadastrar agora" (que abre o cadastro de período/passagens) já aparece no topo. "Antes de embarcar" virou **só o Checklist**. Os "Atalhos" sem sentido saíram do pré-viagem (só aparecem durante a viagem). Trilho de dias só quando há dias.
+- **Roteiro e Mapa** com estado vazio amigável (sem quebrar) e atalho para a tela Hoje.
+- **Convidar viajantes:** novo ícone no topo (e card na Hoje após entrar) que compartilha o link do app — funciona em modo nativo e com Firebase.
+- Subtítulo e textos fixos de Portugal removidos. Próximas etapas: perfis genéricos (sem nomes fixos), formulário de onboarding ampliado, criar eventos do roteiro do zero.
+
+## v6.4 · 19 maio 2026 · Correção: link puro travava exigindo Firebase
+
+- **Bug:** abrir o link direto (sem convite) mostrava só "Entrar com Google" e, ao tocar, um `confirm()` sem saída pedindo configurar o Firebase. Pior: ao confirmar, ele logava como "caio" e abria direto em **Nuvem & Login** em vez da tela inicial.
+- **Causa:** o `enhanceWelcome` sequestrava a tela de boas-vindas e forçava Google mesmo sem Firebase, com dead-end de configuração.
+- **Correção:** sem Firebase configurado, a tela de boas-vindas **nativa** volta a aparecer (escolher perfil e entrar offline) — exatamente o "Modo nativo" que o app documenta. Com Firebase (via link de convite), o fluxo Google segue igual. Mudança mínima, sem regressão.
+
+## v6.3 · 19 maio 2026 · Lembretes do roteiro (alarme no calendário)
+
+- **O .ics agora toca antes:** cada evento com horário leva alarme **30 min antes**; voos, check-in, reservas e marcos levam um alarme extra **3 h antes**. Adicionado via `VALARM` no iCalendar (RFC 5545).
+- **Por que assim (honesto):** o app é estático (GitHub Pages, sem servidor) e iPhone só dá push de PWA instalado. Notificação por servidor não é possível. O calendário do aparelho é o único caminho que **funciona com o app fechado, offline e sem login** — e já era o mecanismo de export do roteiro; só faltava o alarme.
+- Texto de Mais → Calendar atualizado explicando o lembrete. Mudança aditiva, sem regressão.
+
+## v6.2 · 19 maio 2026 · Caixinha redonda — marcar acerto como pago
+
+- **Marcar como pago:** cada linha de acerto em Saldos ganhou o botão **"Marcar como pago"**. Ao confirmar, o pagamento entra como um lançamento de acerto e **a dívida zera** — antes ela ficava para sempre (tinha que inventar uma despesa invertida).
+- **Extrato honesto:** acertos pagos aparecem como uma linha distinta (verde, tracejada, "Fulano → Beltrano") e **não entram no "Total do grupo"** (é transferência, não gasto). Botão **"desfazer"** caso registre errado.
+- **Sincroniza igual:** o pagamento é um lançamento normal (com id/ts), então o "Gerar/Colar código" entre os quatro já o propaga sem nenhuma mudança no sync.
+- Zero alteração no cálculo de saldos e no algoritmo de acerto — o pagamento apenas flui por eles. Mudanças aditivas, sem regressão.
+
+## v6.1 · 19 maio 2026 · Tela "Hoje/Agora" ciente do tempo
+
+- **Quanto falta:** o card da tela Hoje agora mostra um selo com o tempo até o próximo compromisso — **"em 40 min"**, **"em 2h10"** — em vez de só o horário fixo. Bem mais acionável no momento.
+- **Acontecendo agora:** se um compromisso começou há até 90 min e nada novo está logo aí, o card vira **"Agora"** (selo terracota, borda destacada) — reconhece que você está no meio do passeio/refeição.
+- **Fim do dia sem confusão:** quando não há mais nada marcado, em vez de voltar a mostrar o evento da manhã (já passado), aparece **"Por hoje é isso · nada mais marcado — aproveite a noite"** com atalho direto para **ver o dia de amanhã**.
+- **Considera eventos do grupo:** o "próximo" passou a usar os eventos efetivos (inclui os que o grupo adicionou ao roteiro), não só os fixos.
+- Mudanças aditivas: `nextEvent()` mantém todos os campos que o card e o botão flutuante já usavam; zero regressão.
+
+## v6.0 · 19 maio 2026 · Blindagem do modo offline (roaming instável em viagem)
+
+- **Aviso de rede:** uma faixa discreta no topo aparece quando o celular fica **sem internet**, tranquilizando que o app continua funcionando (roteiro, mapas salvos, contatos, frases). Some sozinha e confirma **"Conectado de novo"** ao voltar a rede. Usa `navigator.onLine` + eventos `online`/`offline`.
+- **Câmbio com data:** as duas telas de câmbio (Mais → Câmbio e Caixinha → Câmbio) agora mostram **de quando é a cotação** (ex.: "cotação de 21/05 14h30") em vez de só "estimativa/atualizada". Offline, avisa **"sem rede agora"** para o viajante saber que o valor pode estar velho. Cotação e data sincronizadas entre as duas telas.
+- **Sem `alert` travando:** atualizar a cotação sem internet não trava mais com um pop-up; usa aviso leve e mantém a última cotação salva.
+- Mudanças 100% aditivas — nenhuma lógica existente removida; zero regressão de usabilidade.
+
 ## v5.5 · 19 maio 2026 · Brand book aplicado ao layout (editorial/atlas)
 
 - **Fundo:** removida a bandeira de Portugal + véu escuro; agora pergaminho Plotti com traço cartográfico pontilhado sutil (claro e escuro). App inteiro clareou para o editorial do brand.
