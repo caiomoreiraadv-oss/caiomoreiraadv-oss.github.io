@@ -152,22 +152,11 @@
         var prov=new fb.a.GoogleAuthProvider();
         prov.addScope('https://www.googleapis.com/auth/calendar.events');
         prov.setCustomParameters({ prompt:'select_account' });
-        // PWA standalone (iOS na tela de início): popup não funciona → redirect direto.
-        var standalone = (window.navigator && window.navigator.standalone===true) ||
-          (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-        if(standalone){ return fb.a.signInWithRedirect(fb.auth, prov); }
-        // Desktop/aba: tenta popup; se o popup for bloqueado e a promise ficar
-        // pendurada, um timeout cai p/ redirect — fim do "Abrindo Google…" eterno.
-        return new Promise(function(resolve, reject){
-          var done=false;
-          function fallback(){ if(done) return; done=true; clearTimeout(t);
-            fb.a.signInWithRedirect(fb.auth, prov).then(resolve, reject); }
-          var t=setTimeout(fallback, 8000);
-          fb.a.signInWithPopup(fb.auth, prov).then(function(res){
-            if(done) return; done=true; clearTimeout(t);
-            captureToken(fb,res); resolve(res);
-          }).catch(function(){ fallback(); });
-        });
+        // REDIRECT SEMPRE. O popup é bloqueado por padrão no Chrome desktop e
+        // deixava o login preso em "Abrindo Google…". Redirect funciona em
+        // qualquer ambiente: a página vai ao Google e volta; o login é
+        // finalizado em checkRedirect()→getRedirectResult() no arranque.
+        return fb.a.signInWithRedirect(fb.auth, prov);
       });
     }
     // Identidade GENÉRICA: qualquer conta Google entra. O "lugar" (slot) é
