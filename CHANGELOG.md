@@ -1,5 +1,21 @@
 # PT-2026 · Changelog
 
+## v6.6 · 19 maio 2026 · Assistente de instalação (install.html)
+
+- Nova página `install.html` — o link "para virar app na tela do celular". Detecta sozinho o aparelho/navegador e mostra o caminho certo:
+  - **Safari no iPhone:** passo a passo com o ícone real do Compartilhar e "Adicionar à Tela de Início".
+  - **WhatsApp/Instagram/Facebook/Messenger/LINE no iPhone:** avisa "abra no Safari primeiro" e ensina como.
+  - **Chrome/Firefox/Edge no iPhone:** explica que a Apple só deixa instalar pelo Safari e oferece copiar o endereço.
+  - **Chrome no Android:** botão "Instalar agora" que aciona o instalador nativo (`beforeinstallprompt`); fallback manual se o Chrome não oferecer.
+  - **Outros navegadores no Android:** instrui a abrir no Chrome.
+  - **Desktop:** explica que o melhor é instalar pelo celular e dá link direto.
+- **Já instalado** (`display-mode: standalone`): redireciona direto para o app, sem mostrar instruções.
+- Página única, autônoma, mesmo estilo do app (Fraunces + Inter, paleta Plotti, dark mode automático).
+- Adicionada ao precache do service worker (abre offline na segunda visita).
+- Link para compartilhar: `https://caiomoreiraadv-oss.github.io/install.html` — esse é o link "em ponto de bala".
+
+**Honesto sobre a limitação da Apple:** não existe API que instale o PWA sozinho no iPhone — é regra da Apple, vale para qualquer PWA. O assistente faz o máximo possível: caminho certo em 2-3 toques, sem o usuário ficar perdido em qual botão tocar.
+
 ## v6.5 · 19 maio 2026 · App em branco (genérico) — Etapa 1
 
 - **Conteúdo de Portugal removido:** `TRIP`, `HOTELS`, `DAYS`, `EVENTS`, `CONTATOS`, `BOARD_STOPS`, `MISSIONS`, `COMPAT` esvaziados. Nada de viagem pré-preenchido (o conteúdo segue salvo no histórico do Git).
