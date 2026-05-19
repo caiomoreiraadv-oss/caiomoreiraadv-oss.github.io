@@ -152,9 +152,21 @@
         var prov=new fb.a.GoogleAuthProvider();
         prov.addScope('https://www.googleapis.com/auth/calendar.events');
         prov.setCustomParameters({ prompt:'select_account' });
-        // standalone PWA iOS: popup costuma falhar → tenta popup, cai p/ redirect
-        return fb.a.signInWithPopup(fb.auth, prov).then(function(res){ captureToken(fb,res); return res; }).catch(function(){
-          return fb.a.signInWithRedirect(fb.auth, prov);
+        // PWA standalone (iOS na tela de início): popup não funciona → redirect direto.
+        var standalone = (window.navigator && window.navigator.standalone===true) ||
+          (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+        if(standalone){ return fb.a.signInWithRedirect(fb.auth, prov); }
+        // Desktop/aba: tenta popup; se o popup for bloqueado e a promise ficar
+        // pendurada, um timeout cai p/ redirect — fim do "Abrindo Google…" eterno.
+        return new Promise(function(resolve, reject){
+          var done=false;
+          function fallback(){ if(done) return; done=true; clearTimeout(t);
+            fb.a.signInWithRedirect(fb.auth, prov).then(resolve, reject); }
+          var t=setTimeout(fallback, 8000);
+          fb.a.signInWithPopup(fb.auth, prov).then(function(res){
+            if(done) return; done=true; clearTimeout(t);
+            captureToken(fb,res); resolve(res);
+          }).catch(function(){ fallback(); });
         });
       });
     }
@@ -211,7 +223,27 @@
     var CONSENT_KEY='pt2026:fb:consent', GCAL_DONE='pt2026:fb:gcal';
     function tripWindowNow(){ var t=new Date(); return t>=new Date('2026-05-22T00:00:00') && t<=new Date('2026-05-29T23:59:59'); }
     function slotKey(){ return localStorage.getItem(ME_KEY) || (FB&&FB.auth&&FB.auth.currentUser&&FB.auth.currentUser.uid) || 'caio'; }
-    function quizDone(){ try{ return !!localStorage.getItem('pt2026:quiz:'+slotKey()); }catch(e){ return false; } }
+    function quizDone(){
+      var k=slotKey();
+      try{ if(localStorage.getItem('pt2026:quiz:'+k)) return true; }catch(e){}
+      try{ var q=state.x2&&state.x2.quiz; if(q&&q[k]&&q[k].profile) return true; }catch(e){}
+      return false;
+    }
+    // sinal "primeiro sync chegou" — p/ não recobrar o quiz de quem já respondeu
+    // em outro aparelho/endereço (o resultado vem sincronizado do Firebase).
+    var firstSyncDone=false, syncWaiters=[];
+    function flushSync(){ if(firstSyncDone) return; firstSyncDone=true; var w=syncWaiters.slice(); syncWaiters=[]; w.forEach(function(f){ try{ f(); }catch(e){} }); }
+    function whenSynced(cb){
+      if(firstSyncDone || !FB || !FB.auth || !FB.auth.currentUser){ cb(); return; }
+      syncWaiters.push(cb);
+      setTimeout(flushSync, 6000); // rede lenta/offline: decide assim mesmo, não trava
+    }
+    function backfillQuizLocal(){
+      try{ var k=slotKey(); if(localStorage.getItem('pt2026:quiz:'+k)) return;
+        var q=state.x2&&state.x2.quiz&&state.x2.quiz[k];
+        if(q&&q.profile) localStorage.setItem('pt2026:quiz:'+k, JSON.stringify({profile:q.profile, grad:q.grad||'', ts:q.ts||Date.now()}));
+      }catch(e){}
+    }
     function afterLogin(){
       if(localStorage.getItem(SHARE_KEY)==='1' && tripWindowNow() && !watchId) startShareLocation();
       if(!localStorage.getItem(CONSENT_KEY)){ setTimeout(function(){ consentScreen(maybeQuiz); }, 400); return; }
@@ -223,7 +255,15 @@
       if(localStorage.getItem('pt2026:trip:skip:'+slotKey())==='1') return;
       setTimeout(flightSetup, 350);
     }
-    function maybeQuiz(){ if(!quizDone()) setTimeout(quizScreen, 350); else maybeFlight(); }
+    function maybeQuiz(){
+      if(quizDone()){ backfillQuizLocal(); maybeFlight(); return; }
+      // localStorage vazio (aparelho/endereço novo): espera o 1º sync.
+      // Se o perfil já existir no Firebase, NÃO recobra o quiz.
+      whenSynced(function(){
+        if(quizDone()){ backfillQuizLocal(); maybeFlight(); return; }
+        setTimeout(quizScreen, 350);
+      });
+    }
     function pushCalendar(){
       if(!gToken || gToken.exp<Date.now()) return false;
       if(localStorage.getItem(GCAL_DONE)==='1') return true;
@@ -517,10 +557,11 @@
         unsubShared=true;
         fb.d.onValue(sharedRef(), function(snap){
           var val=snap.val();
-          if(!val){ pushShared(); return; }
+          if(!val){ pushShared(); flushSync(); return; }
           applyingRemote=true;
           var ch=mergeShared(val);
           applyingRemote=false;
+          flushSync();
           if(ch){
             saveState();
             var cur=document.querySelector('.view.active');
@@ -1167,8 +1208,8 @@
           }
           return;
         }
-        this.textContent='Abrindo Google…';
-        googleSignIn().catch(function(e){ alert('Erro: '+(e&&e.message||e)); });
+        var _gb=this; _gb.textContent='Abrindo Google…';
+        googleSignIn().catch(function(e){ try{ _gb.textContent='Entrar com Google'; }catch(_){} alert('Não consegui abrir o login Google: '+(e&&e.message||e)+'\nTente de novo — e libere popups para este site.'); });
       };
     }
     var origRW=G.renderWelcome;
