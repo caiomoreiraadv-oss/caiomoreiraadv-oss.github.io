@@ -1,5 +1,13 @@
 # PT-2026 · Changelog
 
+## v6.1 · 19 maio 2026 · Tela "Hoje/Agora" ciente do tempo
+
+- **Quanto falta:** o card da tela Hoje agora mostra um selo com o tempo até o próximo compromisso — **"em 40 min"**, **"em 2h10"** — em vez de só o horário fixo. Bem mais acionável no momento.
+- **Acontecendo agora:** se um compromisso começou há até 90 min e nada novo está logo aí, o card vira **"Agora"** (selo terracota, borda destacada) — reconhece que você está no meio do passeio/refeição.
+- **Fim do dia sem confusão:** quando não há mais nada marcado, em vez de voltar a mostrar o evento da manhã (já passado), aparece **"Por hoje é isso · nada mais marcado — aproveite a noite"** com atalho direto para **ver o dia de amanhã**.
+- **Considera eventos do grupo:** o "próximo" passou a usar os eventos efetivos (inclui os que o grupo adicionou ao roteiro), não só os fixos.
+- Mudanças aditivas: `nextEvent()` mantém todos os campos que o card e o botão flutuante já usavam; zero regressão.
+
 ## v6.0 · 19 maio 2026 · Blindagem do modo offline (roaming instável em viagem)
 
 - **Aviso de rede:** uma faixa discreta no topo aparece quando o celular fica **sem internet**, tranquilizando que o app continua funcionando (roteiro, mapas salvos, contatos, frases). Some sozinha e confirma **"Conectado de novo"** ao voltar a rede. Usa `navigator.onLine` + eventos `online`/`offline`.

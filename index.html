@@ -1187,7 +1187,7 @@ p{color:var(--ink-soft)}
 </div>
 
 <!-- Versão visível no canto inferior direito (discreto, sobre o nav) -->
-<button id="app-version" type="button" onclick="forceUpdate()" aria-label="Atualizar o app para a versão mais recente" title="Atualizar o app" style="position:fixed;bottom:calc(64px + env(safe-area-inset-bottom) + 10px);right:10px;z-index:40;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:9px 14px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--surface);background:var(--olive);border:none;border-radius:999px;box-shadow:0 2px 10px rgba(31,26,20,.20);cursor:pointer;letter-spacing:.02em">&#8635; Atualizar <span style="opacity:.72">v6.0</span></button>
+<button id="app-version" type="button" onclick="forceUpdate()" aria-label="Atualizar o app para a versão mais recente" title="Atualizar o app" style="position:fixed;bottom:calc(64px + env(safe-area-inset-bottom) + 10px);right:10px;z-index:40;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:9px 14px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--surface);background:var(--olive);border:none;border-radius:999px;box-shadow:0 2px 10px rgba(31,26,20,.20);cursor:pointer;letter-spacing:.02em">&#8635; Atualizar <span style="opacity:.72">v6.1</span></button>
 
 <!-- (banner de update removido — atualizações são silenciosas; force-update fica em Mais → Sobre) -->
 
@@ -2859,19 +2859,38 @@ function nextEvent(){
   const dayN = currentDayNum();
   if(dayN <= 0 || dayN > DAYS.length) return null;
   const t = today();
-  const todayEvents = EVENTS.filter(e => e.day === dayN);
+  const todayEvents = getEffectiveEvents()
+    .filter(e => e.day === dayN)
+    .map(e => {
+      const m = e.time?.match(/(\d{1,2}):(\d{2})/);
+      return m ? {...e, _min: parseInt(m[1])*60 + parseInt(m[2])} : null;
+    })
+    .filter(Boolean)
+    .sort((a,b) => a._min - b._min);
+  if(!todayEvents.length) return null;
   const nowMin = t.getHours()*60 + t.getMinutes();
-  let best = null;
-  todayEvents.forEach(e => {
-    const m = e.time?.match(/(\d{1,2}):(\d{2})/);
-    if(m){
-      const min = parseInt(m[1])*60 + parseInt(m[2]);
-      if(min >= nowMin && (!best || min < best._min)){
-        best = {...e, _min:min};
-      }
-    }
-  });
-  return best || todayEvents[0];
+  const upcoming = todayEvents.find(e => e._min >= nowMin);
+  let lastPast = null;
+  todayEvents.forEach(e => { if(e._min < nowMin) lastPast = e; });
+  // Acontecendo agora: começou há até 90 min e nada novo bem próximo
+  if(lastPast && (nowMin - lastPast._min) <= 90 && (!upcoming || (upcoming._min - nowMin) > 10)){
+    return {...lastPast, _status:'now', _relMin: nowMin - lastPast._min};
+  }
+  if(upcoming){
+    return {...upcoming, _status:'upcoming', _relMin: upcoming._min - nowMin};
+  }
+  // Dia encerrado — sem mais nada marcado
+  return {...todayEvents[todayEvents.length - 1], _status:'ended', _relMin: 0};
+}
+function relTimeLabel(ne){
+  if(!ne) return '';
+  if(ne._status === 'now') return 'agora';
+  if(ne._status === 'ended') return 'nada mais hoje';
+  const m = ne._relMin;
+  if(m <= 0) return 'agora';
+  if(m < 60) return 'em ' + m + ' min';
+  const h = Math.floor(m/60), mm = m % 60;
+  return 'em ' + h + 'h' + (mm ? (mm < 10 ? '0' : '') + mm : '');
 }
 
 /* ----------------- URLS ----------------- */
@@ -3027,23 +3046,43 @@ function renderHoje(){
       </div>
     `;
     if(ne){
-      nextBlock = `
-        <div class="section">
-          <div class="section-head">
-            <h2 class="serif">Próximo</h2>
-            <span class="meta">${ne.time}</span>
-          </div>
-          <div class="pad">
-            <div class="tl-card">
-              <div class="tl-time">${ICONS[ne.icon]||ICONS.clock}<span>${ne.time}</span></div>
-              <div class="tl-title">${ne.title}</div>
-              ${ne.sub?`<div class="tl-sub">${ne.sub}</div>`:''}
-              ${ne.notes?`<div class="note">${ne.notes}</div>`:''}
-              ${renderActions(ne.actions||[])}
+      const rel = relTimeLabel(ne);
+      const head = ne._status === 'now' ? 'Agora' : ne._status === 'ended' ? 'Por hoje é isso' : 'Próximo';
+      const chipBg = ne._status === 'now' ? 'var(--terra)' : 'var(--olive)';
+      if(ne._status === 'ended'){
+        const nextDay = DAYS.find(d => d.n === dayN + 1);
+        nextBlock = `
+          <div class="section">
+            <div class="section-head"><h2 class="serif">${head}</h2></div>
+            <div class="pad">
+              <div class="tl-card">
+                <div class="tl-title">Nada mais marcado para hoje.</div>
+                <div class="tl-sub">Aproveite a noite — sem corrida.</div>
+                ${nextDay ? `<div class="tl-actions"><button class="tl-action primary" data-go="roteiro" data-day="${nextDay.n}">${ICONS.clock}<span>Ver o dia de amanhã</span></button></div>` : ''}
+              </div>
             </div>
           </div>
-        </div>
-      `;
+        `;
+      } else {
+        const chip = `<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;background:${chipBg};color:var(--surface);font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:.04em;text-transform:uppercase">${rel}</span>`;
+        nextBlock = `
+          <div class="section">
+            <div class="section-head">
+              <h2 class="serif">${head}</h2>
+              ${chip}
+            </div>
+            <div class="pad">
+              <div class="tl-card"${ne._status==='now'?' style="border:1px solid var(--terra-50)"':''}>
+                <div class="tl-time">${ICONS[ne.icon]||ICONS.clock}<span>${ne.time}</span></div>
+                <div class="tl-title">${ne.title}</div>
+                ${ne.sub?`<div class="tl-sub">${ne.sub}</div>`:''}
+                ${ne.notes?`<div class="note">${ne.notes}</div>`:''}
+                ${renderActions(ne.actions||[])}
+              </div>
+            </div>
+          </div>
+        `;
+      }
     }
   }
 
@@ -4176,7 +4215,7 @@ function toggleTheme(){
   applyTheme();
 }
 
-const APP_VERSION = 'v6.0';
+const APP_VERSION = 'v6.1';
 let deferredInstall;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
