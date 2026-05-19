@@ -3161,13 +3161,12 @@ function renderMais(){
         <button class="util-tile" data-sub="contatos"><div class="ut-icon">${ICONS.phone}</div><h4>Contatos</h4><p>Hotéis, voos, emergências, embaixada.</p></button>
         <button class="util-tile" data-sub="hoteis"><div class="ut-icon">${ICONS.hotel}</div><h4>Hotéis</h4><p>Endereços, check-in, PIN do Booking.</p></button>
         <button class="util-tile" data-sub="voos"><div class="ut-icon">${ICONS.plane}</div><h4>Voos & Carro</h4><p>TAP, Sixt, retirada e devolução.</p></button>
-        <button class="util-tile" data-sub="docs"><div class="ut-icon">${ICONS.doc}</div><h4>Documentos</h4><p>Localizadores, vouchers, lembretes.</p></button>
+        <button class="util-tile" data-sub="docs"><div class="ut-icon">${ICONS.doc}</div><h4>Documentos & Passaporte</h4><p>Localizadores, vouchers e selos das missões.</p></button>
         <button class="util-tile" data-sub="checklist"><div class="ut-icon">${ICONS.bag}</div><h4>Checklist</h4><p>Bagagem e itens para embarcar.</p></button>
         <button class="util-tile" data-sub="cambio"><div class="ut-icon">${ICONS.euro}</div><h4>Câmbio</h4><p>EUR ↔ BRL e dicas de saque.</p></button>
         <button class="util-tile" data-sub="frases"><div class="ut-icon">${ICONS.bubble}</div><h4>Frases PT-PT</h4><p>Sumo, sande, comboio, multibanco.</p></button>
         <button class="util-tile" data-sub="dicas"><div class="ut-icon">${ICONS.star}</div><h4>Dicas finais</h4><p>Multibanco, gorjeta, couvert, tomada.</p></button>
-        <button class="util-tile" data-sub="fotos"><div class="ut-icon">${ICONS.view}</div><h4>Personalizar fotos</h4><p>Suas fotos como capa de cada dia.</p></button>
-        <button class="util-tile" data-sub="ambient"><div class="ut-icon">${ICONS.sun}</div><h4>Atmosfera</h4><p>Foto de fundo do app inteiro.</p></button>
+        <button class="util-tile" data-sub="fotos"><div class="ut-icon">${ICONS.view}</div><h4>Personalizar visual</h4><p>Capas dos dias e foto de fundo do app.</p></button>
         <button class="util-tile" data-sub="google"><div class="ut-icon">${ICONS.clock}</div><h4>Calendar</h4><p>Roteiro no seu calendário.</p></button>
         <button class="util-tile" data-sub="sobre"><div class="ut-icon">${ICONS.bookmark}</div><h4>Sobre o app</h4><p>Como instalar e atualizar.</p></button>
       </div>
@@ -3321,6 +3320,7 @@ function renderMais(){
   }
 
   if(sub === 'fotos'){
+    const ambientCurrent = getAmbientPhoto();
     const daysList = DAYS.map(d => {
       const photo = getUserPhoto(d.n);
       return `
@@ -3347,9 +3347,37 @@ function renderMais(){
       `;
     }).join('');
     $('#mais-content').innerHTML = back + `
-      <div class="pad mt-16"><h2 class="serif">Personalizar fotos</h2></div>
-      <p class="text-soft text-small pad mt-8">Suas fotos da galeria viram a capa de cada dia. Salvas no seu aparelho.</p>
+      <div class="pad mt-16"><h2 class="serif">Personalizar visual</h2></div>
+      <p class="text-soft text-small pad mt-8">Capas dos dias e foto de fundo do app — tudo em um só lugar.</p>
+
+      <div class="section">
+        <div class="section-head"><h2 class="serif" style="font-size:16px">Capas dos dias</h2></div>
+      </div>
+      <p class="text-soft text-small pad">Suas fotos da galeria viram a capa de cada dia. Salvas no seu aparelho.</p>
       <div class="pad mt-16">${daysList}</div>
+
+      <div class="section">
+        <div class="section-head"><h2 class="serif" style="font-size:16px">Atmosfera · pano de fundo</h2></div>
+      </div>
+      <p class="text-soft text-small pad">Uma foto sutil atrás de todo o app, criando ambiente sem prejudicar a legibilidade. Renderizada com 10% de opacidade e leve desfoque.</p>
+      <div class="pad mt-16">
+        <div class="tl-card">
+          ${ambientCurrent
+            ? `<div style="width:100%;height:200px;border-radius:12px;background:url('${ambientCurrent}') center/cover;margin-bottom:12px"></div>
+               <div class="text-soft text-small">Foto ativa no fundo do app.</div>`
+            : `<div style="width:100%;height:200px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;color:var(--ink-muted);font-size:13px;margin-bottom:12px">Sem foto de fundo</div>`
+          }
+          <div class="tl-actions">
+            <label class="tl-action primary" style="cursor:pointer">
+              <input type="file" accept="image/*" id="ambient-upload" style="display:none">
+              ${ICONS.shop}<span>${ambientCurrent?'Trocar foto':'Escolher foto'}</span>
+            </label>
+            ${ambientCurrent?`<button class="tl-action" id="ambient-clear">${ICONS.warn}<span>Remover</span></button>`:''}
+          </div>
+          <p class="text-muted text-small mt-12">Dica: paisagem amplo (Ribeira do Porto, ponte 25 de Abril, falésias) funciona melhor que retrato.</p>
+        </div>
+      </div>
+
       <div class="pad mt-16">
         <div class="tl-card" style="background:var(--olive-50)">
           <div class="eyebrow" style="color:var(--olive-dark)">MODO ADMIN · sincronizar com os 4</div>
@@ -3368,6 +3396,20 @@ function renderMais(){
       </div>
       <div class="spacer-lg"></div>
     `;
+    $('#ambient-upload')?.addEventListener('change', async (e) => {
+      const f = e.target.files && e.target.files[0]; if(!f) return;
+      try {
+        const dataUrl = await compressImage(f, 1600, 0.72);
+        saveAmbientPhoto(dataUrl);
+        renderMais();
+      } catch(err){ alert('Não consegui ler essa imagem.'); }
+    });
+    $('#ambient-clear')?.addEventListener('click', () => {
+      if(confirm('Remover foto de fundo?')){
+        saveAmbientPhoto(null);
+        renderMais();
+      }
+    });
     // Bind upload
     document.querySelectorAll('[data-photo-day]').forEach(input => {
       input.addEventListener('change', async (e) => {
@@ -3504,8 +3546,17 @@ function renderMais(){
 
   if(sub === 'docs'){
     $('#mais-content').innerHTML = back + `
-      <div class="pad mt-16"><h2 class="serif">Documentos</h2></div>
+      <div class="pad mt-16"><h2 class="serif">Documentos & Passaporte</h2></div>
       <div class="pad mt-16">
+        <div class="tl-card" style="background:var(--olive-50)">
+          <div class="eyebrow" style="color:var(--olive-dark)">PASSAPORTE DA VIAGEM</div>
+          <h4 class="serif mt-8">Selos das missões dos quatro</h4>
+          <p class="text-soft text-small mt-8">Cada conquista da viagem vira um selo — pastéis, miradouros, fado, comboios. Veja o passaporte completo do grupo.</p>
+          <div class="tl-actions">
+            <button class="tl-action primary" data-sub="passaporte">${ICONS.star}<span>Abrir Passaporte</span></button>
+          </div>
+        </div>
+        <div class="spacer-sm"></div>
         <div class="tl-card">
           <h4 class="serif">Localizadores rápidos</h4>
           <dl class="hotel-grid" style="margin-top:12px">

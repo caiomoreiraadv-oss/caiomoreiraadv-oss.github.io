@@ -188,7 +188,6 @@
       if(!grid || grid.querySelector('[data-sub="caixinha"]')) return;
       var tiles = [
         ['caixinha','euro','Caixinha','Despesas, saldos e acerto em EUR/BRL.'],
-        ['passaporte','star','Passaporte','Selos das missões dos quatro.'],
         ['dormir','hotel','Onde dormimos','Hotéis, anexos, contato, chegada.'],
         ['voos2','plane','Decolagens','Voos, localizador, cartão de embarque.'],
         ['vitrine','bookmark','Vitrine','Ingressos e bilhetes com QR.'],

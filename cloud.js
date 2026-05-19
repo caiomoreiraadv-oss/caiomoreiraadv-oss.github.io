@@ -638,7 +638,9 @@
     var MY=['ondeestao','integra','nuvem','reservas'];
     // Gerente do app = quem ocupa o lugar de admin (slot 'caio'). Telas de
     // gestão (nuvem/login e personalização de fotos) só para ele.
-    var ADMIN_ONLY=['nuvem','fotos','ambient'];
+    // Telas de gestão/instalação só fazem sentido para o gerente do app.
+    // 'fotos' agora agrega Personalizar visual + Atmosfera e é aberto a todos.
+    var ADMIN_ONLY=['nuvem','sobre','integra'];
     function isAdmin(){ var me=localStorage.getItem(ME_KEY)||state.activeProfile; return me==='caio'; }
     function gateTiles(){
       if(isAdmin()) return;
