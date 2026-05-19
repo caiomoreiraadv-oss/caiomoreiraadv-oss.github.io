@@ -299,6 +299,7 @@
           '<div class="tl-actions">' +
             '<a class="tl-action primary" target="_blank" href="https://wa.me/?text='+encodeURIComponent(msg)+'">'+ic('whats')+'<span>Cobrar no WhatsApp</span></a>' +
             '<button class="tl-action" data-x2copypay="'+esc(msg)+'">'+ic('doc')+'<span>Copiar PIX/Wise</span></button>' +
+            '<button class="tl-action" data-x2pay="'+t.from+'|'+t.to+'|'+t.amount+'">'+ic('star')+'<span>Marcar como pago</span></button>' +
           '</div></div>';
       }).join('') : '<div class="tl-card" style="margin-top:10px"><p class="text-soft text-small">Tudo quitado — ou ninguém lançou nada ainda.</p></div>';
 
@@ -320,11 +321,23 @@
       var fp = X._fp || 'all';
       var list = X.expenses.slice().sort(function(a,b){ return b.ts-a.ts; });
       if(fp!=='all') list = list.filter(function(e){ return e.payer===fp || participantsOf(e).indexOf(fp)>-1; });
-      var total = X.expenses.reduce(function(s,e){ return s+(Number(e.amount)||0); }, 0);
+      var realExp = X.expenses.filter(function(e){ return e.kind!=='settle'; });
+      var total = realExp.reduce(function(s,e){ return s+(Number(e.amount)||0); }, 0);
       var filters = '<div class="x2-payers" style="margin-bottom:12px"><button class="x2-with'+(fp==='all'?' on':'')+'" data-x2fp="all">Todos</button>' +
         PIDS.map(function(p){ return '<button class="x2-with'+(fp===p?' on':'')+'" data-x2fp="'+p+'" style="--pc:'+PCOLOR[p]+'">'+pname(p)+'</button>'; }).join('') + '</div>';
       var items = list.map(function(e){
         var d = new Date(e.ts);
+        if(e.kind==='settle'){
+          var pto = participantsOf(e)[0];
+          return '<div class="tl-card x2-exp" style="margin-top:8px;border:1px dashed var(--ok)">' +
+            '<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">' +
+              '<div><div style="font-weight:600">Acerto pago</div>' +
+              '<div class="text-muted text-small" style="margin-top:3px">'+ d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}) +' · '+pname(e.payer)+' &rarr; '+pname(pto)+'</div></div>' +
+              '<div style="text-align:right;white-space:nowrap"><div style="font-family:\'Fraunces\',serif;font-size:17px;color:var(--ok)">'+eur(e.amount)+'</div>' +
+              '<div class="text-muted text-small">'+brl(e.amount)+'</div>' +
+              '<button class="x2-del" data-x2del="'+e.id+'" aria-label="Desfazer">desfazer</button></div>' +
+            '</div></div>';
+        }
         var parts = participantsOf(e);
         return '<div class="tl-card x2-exp" style="margin-top:8px">' +
           '<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">' +
@@ -337,7 +350,7 @@
           '</div></div>';
       }).join('');
       return '<div class="pad mt-12">' +
-        '<div class="tl-card"><div class="eyebrow">Total do grupo</div><div style="font-family:\'Fraunces\',serif;font-size:28px;margin-top:4px">'+eur(total)+'</div><div class="text-muted text-small">'+brl(total)+' · '+X.expenses.length+' lançamentos</div></div>' +
+        '<div class="tl-card"><div class="eyebrow">Total do grupo</div><div style="font-family:\'Fraunces\',serif;font-size:28px;margin-top:4px">'+eur(total)+'</div><div class="text-muted text-small">'+brl(total)+' · '+realExp.length+' lançamentos</div></div>' +
         '<div style="margin-top:14px">'+filters+items+'</div></div>';
     }
 
@@ -372,6 +385,14 @@
       if(tab==='saldos'){
         $('#x2-fx') && ($('#x2-fx').onclick=function(){ this.textContent='Atualizando...'; refreshFx(function(ok){ toast(ok?'Câmbio atualizado':'Sem rede — usando estimativa'); scrCaixinha(); }); });
         $$('[data-x2copypay]').forEach(function(b){ b.onclick=function(){ copy(b.dataset.x2copypay); }; });
+        $$('[data-x2pay]').forEach(function(b){ b.onclick=function(){
+          var pr=b.dataset.x2pay.split('|'), from=pr[0], to=pr[1], amt=Math.round(parseFloat(pr[2])*100)/100;
+          if(!confirm(pname(from)+' pagou '+eur(amt)+' para '+pname(to)+'?')) return;
+          X.expenses.push({ id:'s'+Date.now()+Math.random().toString(36).slice(2,6), ts:Date.now(),
+            amount:amt, desc:'Acerto pago', category:'Acerto', kind:'settle',
+            payer:from, split:'custom', with:[to] });
+          px(); toast('Acerto registrado'); scrCaixinha();
+        }; });
         $('#x2-exp') && ($('#x2-exp').onclick=function(){
           var code='PT2026X1'+btoa(unescape(encodeURIComponent(JSON.stringify(X.expenses))));
           copy(code);

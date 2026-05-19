@@ -1,5 +1,12 @@
 # PT-2026 · Changelog
 
+## v6.2 · 19 maio 2026 · Caixinha redonda — marcar acerto como pago
+
+- **Marcar como pago:** cada linha de acerto em Saldos ganhou o botão **"Marcar como pago"**. Ao confirmar, o pagamento entra como um lançamento de acerto e **a dívida zera** — antes ela ficava para sempre (tinha que inventar uma despesa invertida).
+- **Extrato honesto:** acertos pagos aparecem como uma linha distinta (verde, tracejada, "Fulano → Beltrano") e **não entram no "Total do grupo"** (é transferência, não gasto). Botão **"desfazer"** caso registre errado.
+- **Sincroniza igual:** o pagamento é um lançamento normal (com id/ts), então o "Gerar/Colar código" entre os quatro já o propaga sem nenhuma mudança no sync.
+- Zero alteração no cálculo de saldos e no algoritmo de acerto — o pagamento apenas flui por eles. Mudanças aditivas, sem regressão.
+
 ## v6.1 · 19 maio 2026 · Tela "Hoje/Agora" ciente do tempo
 
 - **Quanto falta:** o card da tela Hoje agora mostra um selo com o tempo até o próximo compromisso — **"em 40 min"**, **"em 2h10"** — em vez de só o horário fixo. Bem mais acionável no momento.
