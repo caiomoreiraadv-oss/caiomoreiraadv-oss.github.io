@@ -787,7 +787,8 @@
           '<div class="tl-card" style="margin-top:14px"><div class="eyebrow">Trocar configuração</div>'+
           '<textarea id="fb-in" class="x2-in" rows="4" placeholder="colar nova config"></textarea>'+
           '<div class="tl-actions"><button class="tl-action" id="fb-save">'+ic('check')+'<span>Atualizar</span></button>'+
-          '<button class="tl-action" id="fb-clear">'+ic('warn')+'<span>Remover (voltar ao nativo)</span></button></div></div>';
+          '<button class="tl-action" id="fb-clear">'+ic('warn')+'<span>Remover (voltar ao nativo)</span></button></div></div>'+
+          (isAdmin()? '<div class="tl-card" style="margin-top:14px;border:1px solid var(--terra-50)"><div class="eyebrow" style="color:var(--terra)">Recomeçar do zero</div><p class="text-soft text-small" style="margin-top:6px">Apaga TODOS os dados desta viagem no Firebase (despesas, reservas, voos, perfis/quiz, missões, membros) e recomeça limpo. Irreversível — use antes de alimentar a viagem real.</p><div class="tl-actions"><button class="tl-action" id="cl-reset-trip">'+ic('warn')+'<span>Zerar viagem</span></button></div></div>' : '');
       }
       if(cfg){
         html+='<div class="tl-card" style="margin-top:14px"><div class="eyebrow">Convidar os outros viajantes</div>'+
@@ -836,6 +837,20 @@
       var lg=$('#fb-login'); if(lg) lg.onclick=function(){ lg.textContent='Abrindo Google…'; googleSignIn().then(function(){ }).catch(function(e){ alert('Erro no login: '+(e&&e.message||e)); scrNuvem(); }); };
       var ot=$('#fb-out'); if(ot) ot.onclick=function(){ if(FB) FB.a.signOut(FB.auth).then(function(){ stopShareLocation(); toast('Saiu'); scrNuvem(); }); };
       var cl=$('#fb-clear'); if(cl) cl.onclick=function(){ if(confirm('Remover Firebase e voltar ao modo nativo?')){ localStorage.removeItem(FB_KEY); localStorage.removeItem(ME_KEY); FB=null; toast('Voltou ao nativo'); scrNuvem(); } };
+      var rz=$('#cl-reset-trip'); if(rz) rz.onclick=function(){
+        if(!isAdmin()) return;
+        if(!(FB && FB.auth && FB.auth.currentUser)){ alert('Entre com Google primeiro — a limpeza precisa de login.'); return; }
+        if(!confirm('ZERAR a viagem? Isto apaga TODAS as informações compartilhadas no Firebase (despesas, reservas, voos, perfis/quiz, missões, membros). NÃO dá para desfazer.')) return;
+        if(prompt('Para confirmar, digite ZERAR (em maiúsculas):')!=='ZERAR'){ toast('Cancelado'); return; }
+        loadFirebase().then(function(fb){
+          fb.d.set(rref('trips/'+TRIP), null).then(function(){
+            try{ Object.keys(localStorage).forEach(function(k){ if(/^pt2026:(quiz:|trip:|event_overrides|fb:gcal|fb:consent)/.test(k)) localStorage.removeItem(k); }); }catch(e){}
+            try{ if(state.x2){ state.x2.expenses=[]; state.x2.stays=[]; state.x2.tickets=[]; state.x2.flights=null; state.x2.quiz={}; state.x2.trip=null; state.x2.albumLink=''; } state.missions={}; saveState(); }catch(e){}
+            toast('Viagem zerada — recomeçando do zero');
+            setTimeout(function(){ try{ if(typeof forceUpdate==='function'){ forceUpdate(); return; } }catch(e){} location.reload(); }, 900);
+          }).catch(function(e){ alert('Falha ao zerar: '+(e&&e.message||e)); });
+        }).catch(function(e){ alert('Firebase indisponível: '+(e&&e.message||e)); });
+      };
     }
     function parseCfg(raw){
       if(!raw) return null;
@@ -1484,6 +1499,20 @@
       G.renderPerfil=function(){ origRP.apply(this,arguments); setTimeout(injectPerfil,0); };
     }
 
+    /* ---------- acessibilidade (alvos de toque + tamanho mínimo de texto) ---------- */
+    try{
+      var a11y=document.createElement('style'); a11y.id='cl-a11y';
+      a11y.textContent=
+        '.nav-tab{min-height:52px;font-size:11.5px;display:flex;flex-direction:column;align-items:center;justify-content:center}'+
+        '.icon-btn{min-width:44px;min-height:44px}'+
+        '.tl-action{min-height:44px}'+
+        '.brand-text span{font-size:11px}'+
+        '.text-small,.text-muted{font-size:12.5px}'+
+        '.eyebrow{font-size:11.5px}'+
+        'button,a,[role="button"],.tl-action,.x2-btn-primary,.nav-tab{cursor:pointer}'+
+        ':focus-visible{outline:2px solid var(--olive);outline-offset:2px}';
+      document.head.appendChild(a11y);
+    }catch(e){}
     /* ---------- arranque ---------- */
     acceptInvite(); // link de convite traz a config; salva e segue para o login
     if(fbCfg()){ checkRedirect(); }
