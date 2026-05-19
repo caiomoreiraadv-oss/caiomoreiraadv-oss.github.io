@@ -865,7 +865,7 @@
       var steps=[
         '1. console.firebase.google.com → criar projeto (nome: pt-2026). Pode pular Analytics/Gemini.',
         '2. Botão "＋ Adicionar app" → ícone Web (</>). Apelido pt-2026. Registrar. Copie o firebaseConfig.',
-        '3. Authentication → Vamos começar → Google → Ativar → Salvar. Em Configurações → Domínios autorizados, adicione lucky-yeot-7b5f9c.netlify.app',
+        '3. Authentication → Vamos começar → Google → Ativar → Salvar. Em Configurações → Domínios autorizados, adicione caiomoreiraadv-oss.github.io',
         '4. Realtime Database (NÃO o Firestore) → Criar banco de dados → região Bélgica/Europa → modo bloqueado/produção. Copie a URL que termina em .firebasedatabase.app',
         '5. Aba "Regras" do Realtime Database → cole a regra abaixo → Publicar. Depois cole aqui a config JÁ COM a linha "databaseURL".'
       ];
