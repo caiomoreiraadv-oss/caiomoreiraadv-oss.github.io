@@ -1,5 +1,14 @@
 # PT-2026 · Changelog
 
+## v6.5 · 19 maio 2026 · App em branco (genérico) — Etapa 1
+
+- **Conteúdo de Portugal removido:** `TRIP`, `HOTELS`, `DAYS`, `EVENTS`, `CONTATOS`, `BOARD_STOPS`, `MISSIONS`, `COMPAT` esvaziados. Nada de viagem pré-preenchido (o conteúdo segue salvo no histórico do Git).
+- **Dias gerados pelo usuário:** `DAYS` agora é derivado em runtime do período que você cadastra (`syncDays()` a partir de `state.x2.trip`). `currentDayNum()` à prova de viagem vazia.
+- **Tela Hoje refeita:** estado em branco mostra um hero "Crie a sua viagem"; o card "Cadastrar agora" (que abre o cadastro de período/passagens) já aparece no topo. "Antes de embarcar" virou **só o Checklist**. Os "Atalhos" sem sentido saíram do pré-viagem (só aparecem durante a viagem). Trilho de dias só quando há dias.
+- **Roteiro e Mapa** com estado vazio amigável (sem quebrar) e atalho para a tela Hoje.
+- **Convidar viajantes:** novo ícone no topo (e card na Hoje após entrar) que compartilha o link do app — funciona em modo nativo e com Firebase.
+- Subtítulo e textos fixos de Portugal removidos. Próximas etapas: perfis genéricos (sem nomes fixos), formulário de onboarding ampliado, criar eventos do roteiro do zero.
+
 ## v6.4 · 19 maio 2026 · Correção: link puro travava exigindo Firebase
 
 - **Bug:** abrir o link direto (sem convite) mostrava só "Entrar com Google" e, ao tocar, um `confirm()` sem saída pedindo configurar o Firebase. Pior: ao confirmar, ele logava como "caio" e abria direto em **Nuvem & Login** em vez da tela inicial.

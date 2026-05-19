@@ -1104,7 +1104,7 @@ p{color:var(--ink-soft)}
       </div>
       <div class="brand-text">
         <strong>Plotti</strong>
-        <span>Caio · Amanda · Lucas · Bruna</span>
+        <span id="brand-sub">viagem em grupo</span>
       </div>
     </div>
     <div class="topbar-actions">
@@ -1113,6 +1113,9 @@ p{color:var(--ink-soft)}
       </button>
       <button class="icon-btn" id="btn-install" aria-label="Instalar app" hidden>
         <svg class="s-icon" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-invite" aria-label="Convidar viajantes" title="Convidar viajantes">
+        <svg class="s-icon" viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4zM8 11v6m-3-3h6M3 21a7 7 0 0 1 13 0"/></svg>
       </button>
       <button class="profile-avatar guest" id="btn-active-profile" aria-label="Trocar perfil ativo (toque longo)">?</button>
     </div>
@@ -1187,7 +1190,7 @@ p{color:var(--ink-soft)}
 </div>
 
 <!-- Versão visível no canto inferior direito (discreto, sobre o nav) -->
-<button id="app-version" type="button" onclick="forceUpdate()" aria-label="Atualizar o app para a versão mais recente" title="Atualizar o app" style="position:fixed;bottom:calc(64px + env(safe-area-inset-bottom) + 10px);right:10px;z-index:40;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:9px 14px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--surface);background:var(--olive);border:none;border-radius:999px;box-shadow:0 2px 10px rgba(31,26,20,.20);cursor:pointer;letter-spacing:.02em">&#8635; Atualizar <span style="opacity:.72">v6.4</span></button>
+<button id="app-version" type="button" onclick="forceUpdate()" aria-label="Atualizar o app para a versão mais recente" title="Atualizar o app" style="position:fixed;bottom:calc(64px + env(safe-area-inset-bottom) + 10px);right:10px;z-index:40;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:9px 14px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--surface);background:var(--olive);border:none;border-radius:999px;box-shadow:0 2px 10px rgba(31,26,20,.20);cursor:pointer;letter-spacing:.02em">&#8635; Atualizar <span style="opacity:.72">v6.5</span></button>
 
 <!-- (banner de update removido — atualizações são silenciosas; force-update fica em Mais → Sobre) -->
 
@@ -1487,463 +1490,34 @@ const COVERS = {
 };
 
 /* ----------------- DADOS DA VIAGEM ----------------- */
+/* App em branco: a viagem é definida pelo usuário (state.x2.trip via onboarding).
+   Estes campos ficam vazios até alguém criar/cadastrar a viagem. */
 const TRIP = {
-  title: "Portugal · Casamento Thiago & Lucie",
-  startDate: "2026-05-22",
-  endDate: "2026-05-29",
-  travelers: ["Caio Moreira","Amanda Magalhães","Lucas","Bruna"],
-  weddingSite: "https://www.theknot.com",
-  // Foto de capa real (Unsplash) com fallback para SVG
+  title: "",
+  startDate: "",
+  endDate: "",
+  travelers: [],
+  weddingSite: ""
 };
 
 /* ----------------- FOTOS WIKIMEDIA (estáveis, alta resolução) ----------------- */
-const PHOTOS = {
-  porto:     "https://commons.wikimedia.org/wiki/Special:FilePath/Puente_Don_Luis_I,_Oporto,_Portugal,_2012-05-09,_DD_08.JPG?width=1600",
-  porto_alt: "https://commons.wikimedia.org/wiki/Special:FilePath/Porto_View_Riverside.jpg?width=1600",
-  ribeira:   "https://commons.wikimedia.org/wiki/Special:FilePath/Ribeira_do_Porto_em_2017.jpg?width=1600",
-  douro:     "https://commons.wikimedia.org/wiki/Special:FilePath/Vista_geral_de_S%C3%A3o_Crist%C3%B3v%C3%A3o_do_Douro_(Sabrosa)_em_2017.jpg?width=1600",
-  pinhao:    "https://commons.wikimedia.org/wiki/Special:FilePath/Pinh%C3%A3o,_Portugal_(50554267892).jpg?width=1600",
-  obidos:    "https://commons.wikimedia.org/wiki/Special:FilePath/%C3%93bidos_-_Portugal_(50555135158).jpg?width=1600",
-  fatima:    "https://commons.wikimedia.org/wiki/Special:FilePath/Bas%C3%ADlica_de_Nossa_Senhora_do_Ros%C3%A1rio_de_F%C3%A1tima_2022-3.jpg?width=1600",
-  lisboa:    "https://commons.wikimedia.org/wiki/Special:FilePath/Tram_28,_Lisbon_(48485781367).jpg?width=1600",
-  lisboa_alt:"https://commons.wikimedia.org/wiki/Special:FilePath/Praca_do_Comercio_Lisboa.jpg?width=1600",
-  belem:     "https://commons.wikimedia.org/wiki/Special:FilePath/Torre_de_Bel%C3%A9m_(7).jpg?width=1600",
-  belem_alt: "https://commons.wikimedia.org/wiki/Special:FilePath/Mosteiro_dos_Jer%C3%B3nimos_-_Portugal_(2007-10-27).jpg?width=1600",
-  aeroporto: "https://commons.wikimedia.org/wiki/Special:FilePath/Lisbon_Portela_Airport_-_2017_(38051826492).jpg?width=1600"
-};
+const PHOTOS = {};
 
 /* ----------------- HOTÉIS ----------------- */
-const HOTELS = [
-  {
-    id: "casa-rosa",
-    city: "Porto",
-    cover: PHOTOS.porto,
-    coverSvg: COVERS.porto,
-    name: "Casa Rosa",
-    in: "2026-05-22", out: "2026-05-25", nights: 3,
-    address: "Rua da Alegria 71, 4000-042 Porto",
-    checkIn: "16h", checkOut: "11h",
-    parking: false,
-    phone: "+351910086572",
-    conf: "5234.571.091", pin: "7594",
-    lat: 41.1486, lng: -8.6022,
-    mapsQuery: "Casa Rosa Rua da Alegria 71 Porto"
-  },
-  {
-    id: "sao-luiz",
-    city: "Vale do Douro",
-    cover: PHOTOS.douro,
-    coverSvg: COVERS.douro,
-    name: "Quinta São Luiz — The Vine House",
-    in: "2026-05-25", out: "2026-05-26", nights: 1,
-    address: "EN 222, Adorigo, 5120-012 Tabuaço",
-    checkIn: "16-20h", checkOut: "8-11h",
-    parking: true, view: "Vista do Douro",
-    phone: "+351910096764",
-    conf: "5105.278.281", pin: "8388",
-    lat: 41.1612, lng: -7.5453,
-    mapsQuery: "Quinta São Luiz The Vine House Adorigo Tabuaço"
-  },
-  {
-    id: "browns",
-    city: "Lisboa",
-    cover: PHOTOS.lisboa,
-    coverSvg: COVERS.lisboa,
-    name: "Browns Central Hotel",
-    in: "2026-05-26", out: "2026-05-29", nights: 3,
-    address: "Rua da Assunção 75, 1100-044 Lisboa",
-    checkIn: "15h (até 19-20h)", checkOut: "12h",
-    parking: false,
-    phone: "+351213420328",
-    conf: "5359.640.433", pin: "7627",
-    lat: 38.7106, lng: -9.1389,
-    mapsQuery: "Browns Central Hotel Rua da Assunção 75 Lisboa"
-  }
-];
+const HOTELS = [];
+
 
 /* ----------------- DIAS DA VIAGEM ----------------- */
-const DAYS = [
-  { n:1, date:"2026-05-22", dow:"Sex", title:"Chegada no Porto", city:"Porto", cover:PHOTOS.porto, svg:COVERS.porto, where:"Pouso 15h · Mirajazz à noite", tag:"Abertura" },
-  { n:2, date:"2026-05-23", dow:"Sáb", title:"Casamento", city:"Porto", cover:PHOTOS.ribeira, svg:COVERS.porto, where:"Cerimônia 15h · Quinta", tag:"O grande dia", milestone:true },
-  { n:3, date:"2026-05-24", dow:"Dom", title:"Ressaca em Porto", city:"Porto", cover:PHOTOS.porto_alt, svg:COVERS.porto, where:"Sem horários · Ribeira · Gaia", tag:"Devagar" },
-  { n:4, date:"2026-05-25", dow:"Seg", title:"Vale do Douro", city:"Douro", cover:PHOTOS.pinhao, svg:COVERS.douro, where:"Porto → Pinhão → Adorigo", tag:"Cinematográfico" },
-  { n:5, date:"2026-05-26", dow:"Ter", title:"Douro → Óbidos → Fátima → Lisboa", city:"Em trânsito", cover:PHOTOS.obidos, svg:COVERS.obidos, where:"~555 km · 3 paisagens", tag:"Dia longo" },
-  { n:6, date:"2026-05-27", dow:"Qua", title:"Lisboa a pé", city:"Lisboa", cover:PHOTOS.lisboa, svg:COVERS.lisboa, where:"Baixa · Chiado · Alfama", tag:"A pé" },
-  { n:7, date:"2026-05-28", dow:"Qui", title:"Belém", city:"Lisboa", cover:PHOTOS.belem, svg:COVERS.belem, where:"Jerónimos · Pastéis · Torre", tag:"Descobrimentos" },
-  { n:8, date:"2026-05-29", dow:"Sex", title:"Volta pra casa", city:"Lisboa → Fortaleza", cover:PHOTOS.aeroporto, svg:COVERS.airport, where:"Voo TP 35 · 17h40", tag:"Despedida" }
-];
+const DAYS = [];  // gerado em runtime a partir de state.x2.trip
+
 
 /* ----------------- EVENTOS DO ROTEIRO ----------------- */
-const EVENTS = [
-  /* === PRÉ-EMBARQUE (21 maio) === */
-  { day:0, time:"23:10", type:"plane", icon:"plane", title:"Voo TP 36 · Fortaleza → Lisboa",
-    sub:"7h 20min · Airbus A330 NEO · Economy Discount",
-    notes:"Localizador <strong>XMQFRJ</strong>. Apenas 1 mala de mão (10kg, 55×40×25 cm). Despacho online sai mais barato que no balcão.",
-    actions:[
-      {label:"Check-in TAP", url:"https://www.flytap.com/pt-br/check-in", icon:"web"},
-      {label:"Ligar TAP BR", tel:"+5521404065" + "88", icon:"phone"}
-    ]
-  },
+const EVENTS = [];
 
-  /* === DIA 1 — Sex 22 maio === */
-  { day:1, time:"15:00", type:"milestone", icon:"plane", title:"Pouso em Porto (OPO)",
-    sub:"Voo TP 1928 vindo de Lisboa", milestone:true,
-    notes:"Uber/táxi até Casa Rosa: ~€20–25, 25 min. Cansados da noite de avião — vale o conforto.",
-    actions:[
-      {label:"Maps · OPO → Casa Rosa", maps:"OPO Airport Porto to Casa Rosa Rua da Alegria 71 Porto", icon:"map"},
-      {label:"Pedir Uber", url:"https://m.uber.com/looking?drop[0]=" + encodeURIComponent('{"latitude":41.1486,"longitude":-8.6022,"addressLine1":"Rua da Alegria 71"}'), icon:"car"}
-    ]
-  },
-  { day:1, time:"~16:00", type:"hotel", icon:"hotel", title:"Check-in Casa Rosa",
-    sub:"Rua da Alegria 71 · janela 16h",
-    notes:"Banho, descanso curto, organizar a roupa da noite.",
-    actions:[
-      {label:"Abrir no Maps", maps:"Casa Rosa Rua da Alegria 71 Porto", icon:"map"},
-      {label:"Ligar hotel", tel:"+351910086572", icon:"phone"}
-    ]
-  },
-  { day:1, time:"17:00–17:45", type:"opt", icon:"walk", title:"Mini caminhada de aclimatação · São Bento",
-    sub:"10 min a pé do hotel · opcional",
-    notes:"<span class='label'>Estação de São Bento</span>Os mais de <strong>20 mil azulejos</strong> do átrio levaram 11 anos para serem pintados por Jorge Colaço (1905–1916). Contam batalhas da reconquista cristã, a entrada de D. João I no Porto e a história do transporte.",
-    actions:[
-      {label:"Abrir no Maps", maps:"Estação São Bento Porto", icon:"map"}
-    ]
-  },
-  { day:1, time:"18:00–23:00", type:"milestone", icon:"music", title:"Mirajazz Bar · drinks pré-casamento",
-    sub:"Escadas do Caminho Novo 11 · rooftop sobre o Douro", milestone:true,
-    notes:"<span class='label'>Curiosidade</span>Porta sem identificação no topo de uma escadaria íngreme. <strong>26 vinhos por taça</strong> e jazz vivo enquanto o sol cai sobre Vila Nova de Gaia.",
-    actions:[
-      {label:"Abrir no Maps", maps:"Mirajazz Bar Escadas Caminho Novo Porto", icon:"map"},
-      {label:"Site", url:"https://mirajazz.pt", icon:"web"}
-    ]
-  },
-  { day:1, time:"depois", type:"fork", icon:"fork", title:"Jantar leve perto do hotel",
-    sub:"Tasca da Badalhoca · Cervejaria Brasão",
-    notes:"Amanhã é dia grande — evitar abuso. Petisco rápido, francesinha clássica."
-  },
-
-  /* === DIA 2 — Sáb 23 maio · CASAMENTO === */
-  { day:2, time:"manhã", type:"ring", icon:"ring", title:"Recepção padrinhos · airbnb do Thiago",
-    sub:"Rua Formosa 178, Porto",
-    notes:"Come, bebe, fotos. Dress code: trocar a blusa lá, ou ir pronto.",
-    actions:[
-      {label:"Abrir no Maps", maps:"Rua Formosa 178 Porto", icon:"map"}
-    ]
-  },
-  { day:2, time:"13:00", type:"normal", icon:"walk", title:"Sair do airbnb para a Praça da Batalha",
-    sub:"~10 min a pé"
-  },
-  { day:2, time:"13:30", type:"milestone", icon:"bus", title:"Ônibus oficial parte da Praça da Batalha",
-    sub:"Embarque · 13:30 em ponto", milestone:true,
-    notes:"<strong>Não atrasar.</strong> Caio + Amanda têm lugar reservado na van.",
-    actions:[
-      {label:"Maps · Praça da Batalha", maps:"Praça da Batalha Porto", icon:"map"}
-    ]
-  },
-  { day:2, time:"14:00", type:"normal", icon:"car", title:"Chegada na Quinta" },
-  { day:2, time:"15:00", type:"milestone", icon:"ring", title:"Cerimônia",
-    sub:"⭐ O grande dia · pontualidade absoluta", milestone:true
-  },
-  { day:2, time:"23h–04h", type:"bus", icon:"bus", title:"Transporte de volta para o Porto",
-    sub:"Janela longa · sem pressa"
-  },
-
-  /* === DIA 3 — Dom 24 maio · RESSACA === */
-  { day:3, time:"08:00", type:"warn", icon:"warn", title:"Carro alugado · gerir reagendamento",
-    sub:"Retirada original era hoje 10:30 no OPO",
-    notes:"Reagendar para amanhã (25) cedo ou pedir delivery do carro à Casa Rosa — evita arrastar a ressaca até o OPO. Gerenciar pela conta da Expedia.",
-    actions:[
-      {label:"Site Expedia", url:"https://www.expedia.com.br/account/trips", icon:"web"}
-    ]
-  },
-  { day:3, time:"a partir 13h", type:"fork", icon:"fork", title:"Almoço · Café Santiago",
-    sub:"Francesinha clássica · cura de ressaca portuguesa",
-    notes:"Sem reserva. Rua Passos Manuel.",
-    actions:[
-      {label:"Maps", maps:"Café Santiago Porto", icon:"map"}
-    ]
-  },
-  { day:3, time:"tarde", type:"opt", icon:"walk", title:"Ribeira → Ponte D. Luís I → Gaia",
-    sub:"Atravessar pelo tabuleiro inferior",
-    notes:"<span class='label'>Ponte Luís I</span>Inaugurada em 1886, projetada por Théophile Seyrig, sócio de Gustave Eiffel. O arco metálico tem <strong>172m</strong> — era o maior do mundo na época.",
-    actions:[
-      {label:"Maps · Ribeira", maps:"Ribeira do Porto", icon:"map"},
-      {label:"Maps · Jardim do Morro", maps:"Jardim do Morro Vila Nova de Gaia", icon:"map"}
-    ]
-  },
-  { day:3, time:"sem hora", type:"opt", icon:"shop", title:"Compras leves · A Vida Portuguesa",
-    sub:"Sabonete Confiança, Claus Porto, Tricot",
-    notes:"Marcas históricas. Boas para essa folga.",
-    actions:[
-      {label:"Maps", maps:"A Vida Portuguesa Porto Mercadores", icon:"map"}
-    ]
-  },
-  { day:3, time:"pôr do sol", type:"view", icon:"view", title:"Pôr do sol no Jardim do Morro",
-    sub:"Gaia, do outro lado da ponte",
-    notes:"Cobertor de relva, garrafa de vinho verde, vista frontal do Porto. Sem pressa."
-  },
-  { day:3, time:"jantar", type:"fork", icon:"fork", title:"Jantar leve · Cervejaria Galiza / Tapabento",
-    sub:"Mariscos, ambiente animado mas sem fila eterna",
-    notes:"Amanhã tem Douro."
-  },
-
-  /* === DIA 4 — Seg 25 maio · DOURO === */
-  { day:4, time:"~09:30", type:"car", icon:"car", title:"Retirada do carro · Aeroporto OPO",
-    sub:"Mercedes C-Class Wagon (ou similar)",
-    notes:"Conferir CNH internacional, cartão sem bloqueio, seguro.",
-    actions:[
-      {label:"Maps · OPO", maps:"Aeroporto Francisco Sá Carneiro Porto", icon:"map"}
-    ]
-  },
-  { day:4, time:"~11:00", type:"car", icon:"car", title:"Saída para o Douro · 2h30",
-    sub:"A4 → Régua → N222 (margem sul)",
-    notes:"<span class='label'>Vale do Douro</span>Região vinícola demarcada mais antiga do mundo (<strong>1756</strong>, Marquês de Pombal). Os terraços de xisto foram cavados à mão por gerações — patrimônio UNESCO desde 2001.",
-    actions:[
-      {label:"Maps · Pinhão", maps:"Pinhão Portugal", icon:"map"},
-      {label:"Waze", url:"https://waze.com/ul?ll=41.1900,-7.5500&navigate=yes", icon:"waze"}
-    ]
-  },
-  { day:4, time:"13:00–14:30", type:"milestone", icon:"wine", title:"Almoço · Cozinha da Clara (Quinta de la Rosa)",
-    sub:"⭐ Reserva feita pela Bruna · Chef Pedro Cardoso", milestone:true,
-    notes:"Cozinha portuguesa de raiz, vista frontal do Douro. €35–40 · Mesa da Claire (degustação): €50 sem vinho, €60 com.",
-    actions:[
-      {label:"Maps", maps:"Quinta de la Rosa Pinhão", icon:"map"},
-      {label:"Ligar", tel:"+351254732254", icon:"phone"},
-      {label:"Site", url:"https://www.quintadelarosa.com", icon:"web"}
-    ]
-  },
-  { day:4, time:"15:00–17:00", type:"opt", icon:"view", title:"Tarde no Pinhão",
-    sub:"Estação ferroviária · azulejos do ciclo do vinho",
-    notes:"Sem pressa. Foto obrigatória.",
-    actions:[
-      {label:"Maps · Estação Pinhão", maps:"Estação Pinhão Portugal", icon:"map"}
-    ]
-  },
-  { day:4, time:"~17:30", type:"hotel", icon:"hotel", title:"Check-in Quinta São Luiz",
-    sub:"~30 min de Pinhão pela N222-2 · janela 16h–20h",
-    notes:"<span class='label'>Onde vocês estão dormindo</span>Quinta da Kopke — fundada em <strong>1638</strong>, a mais antiga produtora de vinho do Porto em atividade no mundo. Tonéis nas adegas armazenam vinhos que serão bebidos por filhos que ainda não nasceram.",
-    actions:[
-      {label:"Abrir no Maps", maps:"Quinta São Luiz Adorigo Tabuaço", icon:"map"},
-      {label:"Ligar", tel:"+351910096764", icon:"phone"}
-    ]
-  },
-  { day:4, time:"20:00", type:"fork", icon:"wine", title:"Jantar no restaurante da Quinta",
-    sub:"Chef Vítor de Oliveira · look mais arrumado",
-    notes:"Reservar com antecedência ainda no Brasil.",
-    actions:[
-      {label:"Ligar", tel:"+351910096764", icon:"phone"}
-    ]
-  },
-
-  /* === DIA 5 — Ter 26 maio · DOURO → ÓBIDOS → FÁTIMA → LISBOA === */
-  { day:5, time:"⚠ AVISO", type:"warn", icon:"warn", title:"Viabilidade do dia",
-    sub:"~555 km · 6h só dirigindo",
-    notes:"Quinta → Óbidos ≈ 340 km (3h30) · Óbidos → Fátima ≈ 85 km (1h) · Fátima → Lisboa ≈ 130 km (1h20). <strong>Ligar para Sixt Picoas (+351 255 788 199) e renegociar drop-off para 20-21h antes</strong> — sem isso, o dia fica em corda bamba.",
-    actions:[
-      {label:"Ligar Sixt", tel:"+351255788199", icon:"phone"}
-    ]
-  },
-  { day:5, time:"07:30–08:30", type:"fork", icon:"fork", title:"Café da manhã · Quinta São Luiz" },
-  { day:5, time:"08:30", type:"car", icon:"car", title:"Saída da Quinta",
-    sub:"EN222 → A24 → IP3 → A1 sul · 3h30",
-    notes:"Portagens ~€25. Uma parada técnica em ~Coimbra.",
-    actions:[
-      {label:"Waze · Óbidos", url:"https://waze.com/ul?q=Obidos+Portugal&navigate=yes", icon:"waze"}
-    ]
-  },
-  { day:5, time:"12:00", type:"milestone", icon:"castle", title:"Óbidos · Vila das Rainhas",
-    sub:"Estacionar fora das muralhas (parking grátis na Porta da Vila)", milestone:true,
-    notes:"<span class='label'>Storytelling</span>Em <strong>1282</strong>, D. Dinis presenteou a vila à esposa Isabel de Aragão. A partir daí, cada rei português dava a vila como presente de casamento à rainha. A muralha viu sete séculos de noivas reais. <strong>Pedir ginjinha em copinho de chocolate</strong> — €1-2 em qualquer porta da Rua Direita.",
-    actions:[
-      {label:"Maps · Porta da Vila", maps:"Porta da Vila Óbidos", icon:"map"}
-    ]
-  },
-  { day:5, time:"12:30–14:30", type:"fork", icon:"fork", title:"Almoço · Tasca Torta · Rua Direita",
-    sub:"Chegar 12:30 evita fila",
-    notes:"Peixe, carne, caldeirada. Depois: descer a Rua Direita, subir um trecho de muralha (sem grade — cuidado, mas vale)."
-  },
-  { day:5, time:"14:45", type:"car", icon:"car", title:"Saída para Fátima · 1h",
-    sub:"A8 → A19 → IC9"
-  },
-  { day:5, time:"15:45–17:00", type:"milestone", icon:"church", title:"Santuário de Fátima · missa", milestone:true,
-    sub:"Missas regulares 15h, 16:30 e 18:30",
-    notes:"<span class='label'>As Aparições</span>Entre maio e outubro de <strong>1917</strong>, três pastorinhos — Lúcia, Francisco e Jacinta — relataram seis aparições de Nossa Senhora numa azinheira na Cova da Iria. Em outubro, 70 mil pessoas relataram ter visto o \"milagre do sol\". O santuário recebe hoje ~6 milhões de peregrinos/ano.",
-    actions:[
-      {label:"Maps · Santuário", maps:"Santuário de Fátima", icon:"map"},
-      {label:"Horários oficiais", url:"https://www.fatima.pt/pt/pages/horarios-celebracoes", icon:"web"}
-    ]
-  },
-  { day:5, time:"17:15", type:"car", icon:"car", title:"Saída para Lisboa · 1h20 + trânsito",
-    sub:"A1 sul",
-    notes:"Pode pegar trânsito no fim de tarde na entrada de Lisboa."
-  },
-  { day:5, time:"~18:45", type:"hotel", icon:"hotel", title:"Check-in Browns Central",
-    sub:"Rua da Assunção 75 · janela 19-20h",
-    notes:"<strong>Estratégia:</strong> Caio e Lucas deixam as malas, Amanda e Bruna descansam, eles seguem com o carro para a Sixt.",
-    actions:[
-      {label:"Maps", maps:"Browns Central Hotel Rua Assunção 75 Lisboa", icon:"map"},
-      {label:"Ligar", tel:"+351213420328", icon:"phone"}
-    ]
-  },
-  { day:5, time:"~19:30", type:"car", icon:"car", title:"Devolução do carro · Sixt Picoas",
-    sub:"Caio & Lucas · Rua Andrade Corvo 31",
-    notes:"Aberta 8-22h. Já com drop-off renegociado por telefone. Pegar comprovante. Volta a pé (~25 min) ou Uber.",
-    actions:[
-      {label:"Maps · Sixt Picoas", maps:"Sixt Lisbon Centre Picoas Rua Andrade Corvo 31", icon:"map"},
-      {label:"Ligar", tel:"+351255788199", icon:"phone"}
-    ]
-  },
-  { day:5, time:"~21:00", type:"fork", icon:"fork", title:"Jantar leve · Pinóquio (Restauradores)",
-    sub:"Cervejaria histórica · mariscos, bife à café"
-  },
-
-  /* === DIA 6 — Qua 27 maio · LISBOA A PÉ === */
-  { day:6, time:"manhã", type:"normal", icon:"fork", title:"Café da manhã + saída pela Baixa",
-    sub:"Browns fica a 200m da Rua Augusta"
-  },
-  { day:6, time:"10:30", type:"milestone", icon:"castle", title:"Rua Augusta · Arco · Praça do Comércio", milestone:true,
-    sub:"Caminhar do Rossio para o Tejo",
-    notes:"<span class='label'>Por que essa rua existe assim</span>Em 1º de novembro de <strong>1755</strong>, dia de Todos os Santos, às 9h40, um terremoto de magnitude 8.5 atingiu Lisboa. Vieram um tsunami de 30m e incêndios que duraram dias. O Marquês de Pombal reconstruiu em malha urbana ortogonal — algo inédito. A \"gaiola pombalina\", estrutura interna antissísmica de madeira, segue escondida em cada prédio.",
-    actions:[
-      {label:"Maps · Arco", maps:"Arco da Rua Augusta Lisboa", icon:"map"}
-    ]
-  },
-  { day:6, time:"12:30", type:"fork", icon:"fork", title:"Time Out Market · almoço",
-    sub:"12 min a pé pela Rua do Arsenal",
-    notes:"<span class='label'>Por que conservas?</span>Em <strong>1810</strong>, Nicolas Appert inventou a conservação em recipiente hermético para alimentar tropas de Napoleão. A primeira fábrica portuguesa abriu em 1854. <strong>Comer uma lata portuguesa hoje é provar 170 anos de história.</strong><br>O que pedir: tábua de petiscos do Miguel Castro e Silva, sardinha do Sea Me, pastel de bacalhau com queijo da Manteigaria, vinho verde.",
-    actions:[
-      {label:"Maps · Time Out", maps:"Time Out Market Lisboa", icon:"map"}
-    ]
-  },
-  { day:6, time:"volta", type:"view", icon:"view", title:"Pink Street · Rua Nova do Carvalho",
-    sub:"3 min do Time Out · vazia de dia",
-    notes:"<span class='label'>De zona vermelha a rosa</span>Por séculos serviu marinheiros do Cais do Sodré — bordéis, jogo, brigas. Em 2013, projeto de reabilitação pintou o pavimento de rosa. NYT listou entre as 12 ruas favoritas da Europa.",
-    actions:[
-      {label:"Maps", maps:"Rua Nova do Carvalho Pink Street Lisboa", icon:"map"}
-    ]
-  },
-  { day:6, time:"15:00", type:"milestone", icon:"tram", title:"Elétrico 28 · a experiência do bondinho", milestone:true,
-    sub:"Embarcar no Largo do Martim Moniz",
-    notes:"<span class='label'>O bonde do Fernando Pessoa</span>Inaugurado em março de <strong>1914</strong>. Os carros amarelos têm carroceria original do começo do século XX, restaurada. <strong>Fernando Pessoa era usuário diário</strong> — pegava o 28 entre Campo de Ourique e o Chiado. Bilhete €3 a bordo ou Viva Viagem (€1,80). ~40 min a 1h.",
-    actions:[
-      {label:"Maps · Martim Moniz", maps:"Largo do Martim Moniz Lisboa", icon:"map"}
-    ]
-  },
-  { day:6, time:"fim de tarde", type:"view", icon:"view", title:"Miradouro da Senhora do Monte",
-    sub:"Ponto mais alto de Lisboa · descer do 28 em Graça",
-    notes:"<span class='label'>Onde olhar</span>Da esquerda para a direita: <strong>Castelo de São Jorge</strong> (conquistado aos mouros em 1147), Sé, telhados terracota da Mouraria/Alfama, Tejo, ponte 25 de Abril e — em dia limpo — Cristo Rei.",
-    actions:[
-      {label:"Maps", maps:"Miradouro Senhora do Monte Lisboa", icon:"map"}
-    ]
-  },
-  { day:6, time:"jantar", type:"music", icon:"music", title:"Jantar em Alfama · clima de fado",
-    sub:"Clube de Fado (reserva)",
-    notes:"Casa de fado profissional, jantar acompanhado de espetáculo.",
-    actions:[
-      {label:"Maps · Clube de Fado", maps:"Clube de Fado Alfama Lisboa", icon:"map"}
-    ]
-  },
-
-  /* === DIA 7 — Qui 28 maio · BELÉM === */
-  { day:7, time:"09:30", type:"tram", icon:"tram", title:"Elétrico 15 para Belém",
-    sub:"Embarcar em Praça da Figueira ou Praça do Comércio · ~30 min"
-  },
-  { day:7, time:"10:00–12:00", type:"milestone", icon:"church", title:"Mosteiro dos Jerónimos · €18", milestone:true,
-    sub:"Combinar com Torre de Belém: €25",
-    notes:"<span class='label'>Por que o monumento existe</span>D. Manuel I mandou construir em <strong>1502</strong> como agradecimento pelo retorno de Vasco da Gama da Índia. Pago com imposto de 5% sobre todas as especiarias trazidas pelas naus. Pedra calcário branco-rosado; estilo manuelino: cordas de navio, esferas armilares, conchas. Dentro: túmulos de Vasco da Gama e Luís de Camões. Patrimônio UNESCO desde 1983.",
-    actions:[
-      {label:"Maps · Jerónimos", maps:"Mosteiro dos Jerónimos Lisboa", icon:"map"},
-      {label:"Comprar online", url:"https://www.patrimoniocultural.gov.pt/", icon:"web"}
-    ]
-  },
-  { day:7, time:"12:15", type:"milestone", icon:"fork", title:"Pastéis de Belém · o original", milestone:true,
-    sub:"Rua de Belém 84-92 · pedir quente, com canela e açúcar",
-    notes:"<span class='label'>Por que só este é \"de Belém\"</span>Em <strong>1837</strong>, com os mosteiros fechados pela Revolução Liberal, freiras do Mosteiro dos Jerónimos venderam a receita secreta dos seus pastéis a um confeiteiro vizinho. <strong>Só três pessoas conhecem a fórmula exata, e juraram nunca revelar.</strong> Pastel de Belém é marca registrada: todos os outros são pastel de nata. Fila do balcão (para viagem) anda rápido.",
-    actions:[
-      {label:"Maps", maps:"Pastéis de Belém Rua de Belém", icon:"map"}
-    ]
-  },
-  { day:7, time:"13:30–15:00", type:"fork", icon:"fork", title:"Almoço pela ribeira · Darwin's Café",
-    sub:"Dentro da Fundação Champalimaud · vista frontal Tejo",
-    actions:[
-      {label:"Maps", maps:"Darwin's Café Champalimaud Lisboa", icon:"map"}
-    ]
-  },
-  { day:7, time:"15:30", type:"castle", icon:"castle", title:"Torre de Belém",
-    sub:"15 min a pé do Mosteiro · visita ~45 min",
-    notes:"<span class='label'>A guardiã do Tejo</span>Construída em <strong>1514–1519</strong> por D. Manuel I, como fortaleza para defender a barra do Tejo. Era o último ponto de Portugal que os marinheiros viam ao partir, e o primeiro de volta. Patrimônio UNESCO desde 1983.",
-    actions:[ {label:"Maps", maps:"Torre de Belém Lisboa", icon:"map"} ]
-  },
-  { day:7, time:"~17:00", type:"opt", icon:"shop", title:"LX Factory · no caminho de volta",
-    sub:"Ex-fábrica de tecelagem (1846) convertida em hub criativo",
-    notes:"Lojas de design, livraria Ler Devagar (com bicicleta voadora no teto), restaurantes, grafite.",
-    actions:[ {label:"Maps", maps:"LX Factory Lisboa", icon:"map"} ]
-  },
-  { day:7, time:"jantar", type:"fork", icon:"fork", title:"Última noite \"fora\" · Cervejaria Ramiro",
-    sub:"Lenda dos mariscos · sem reserva, fila vale",
-    actions:[ {label:"Maps", maps:"Cervejaria Ramiro Lisboa", icon:"map"} ]
-  },
-
-  /* === DIA 8 — Sex 29 maio · DESPEDIDA === */
-  { day:8, time:"⏰ Janela", type:"warn", icon:"clock", title:"Janela do dia",
-    sub:"Voo TP 35 às 17:40 · estar no aeroporto até 15:00",
-    notes:"Uber Browns → LIS ≈ 20 min sem trânsito (pode chegar a 40 em pico)."
-  },
-  { day:8, time:"~09:00", type:"normal", icon:"bag", title:"Café da manhã + arrumar mala",
-    sub:"Check-out até 12h · pedir guarda-malas no Browns"
-  },
-  { day:8, time:"10:30–12:00", type:"opt", icon:"shop", title:"Última caminhada · comprinhas",
-    sub:"Tudo a pé do hotel",
-    notes:"Loja das Conservas · Rua do Arsenal 130. Presentes pequenos e baratos — lata é leve. <strong>Cuidado:</strong> apenas 1 mala de mão de 10kg cada. Líquidos > 100ml não passam.",
-    actions:[ {label:"Maps · Loja das Conservas", maps:"Loja das Conservas Rua do Arsenal Lisboa", icon:"map"} ]
-  },
-  { day:8, time:"12:00", type:"normal", icon:"hotel", title:"Check-out no Browns",
-    sub:"Deixar malas no guarda-volumes"
-  },
-  { day:8, time:"12:30–14:00", type:"fork", icon:"fork", title:"Almoço de despedida · Café Beira-Gare",
-    sub:"Rossio · pastéis de bacalhau lendários · em pé, em 30 min",
-    actions:[ {label:"Maps", maps:"Café Beira Gare Rossio Lisboa", icon:"map"} ]
-  },
-  { day:8, time:"14:30", type:"car", icon:"car", title:"Volta ao hotel + Uber para LIS",
-    sub:"Browns → Humberto Delgado: ~€12-15, 20 min",
-    actions:[ {label:"Maps · Aeroporto LIS", maps:"Aeroporto Humberto Delgado Lisboa", icon:"map"} ]
-  },
-  { day:8, time:"15:00", type:"plane", icon:"plane", title:"Chegada no aeroporto",
-    sub:"Check-in TAP · tax-free · segurança · imigração de saída"
-  },
-  { day:8, time:"antes seg.", type:"opt", icon:"euro", title:"Reembolso de IVA (Tax Free)",
-    sub:"Compraram > €50 com formulário?",
-    notes:"Validar no balcão <strong>E-Taxfree Portugal</strong> (Terminal 1). ~13% de volta."
-  },
-  { day:8, time:"17:40", type:"milestone", icon:"plane", title:"Embarque TP 35 · destino Fortaleza", milestone:true,
-    sub:"Pouso em FOR às 21:20",
-    notes:"Boa volta!"
-  }
-];
 
 /* ----------------- CONTATOS ----------------- */
-const CONTACTS = [
-  { group:"Emergências", items:[
-    { name:"112 · Polícia · Bombeiros · SAMU", phone:"112", tag:"Número europeu único", urgent:true },
-    { name:"SNS 24 · Saúde", phone:"+351808242424", tag:"Triagem médica em português", urgent:true },
-    { name:"Embaixada do Brasil em Lisboa", phone:"+351213925800", tag:"Estr. das Laranjeiras 144 · plantão 24h", urgent:true }
-  ]},
-  { group:"Hotéis", items:[
-    { name:"Casa Rosa · Porto", phone:"+351910086572", tag:"Conf 5234.571.091 · PIN 7594" },
-    { name:"Quinta São Luiz · Douro", phone:"+351910096764", tag:"Conf 5105.278.281 · PIN 8388" },
-    { name:"Browns Central · Lisboa", phone:"+351213420328", tag:"Conf 5359.640.433 · PIN 7627" }
-  ]},
-  { group:"Voos & Carro", items:[
-    { name:"TAP Brasil", phone:"+552140406588", tag:"Localizador XMQFRJ" },
-    { name:"TAP Lisboa (LIS)", phone:"+351218413500", tag:"Apoio no destino" },
-    { name:"Sixt Picoas · Lisboa", phone:"+351255788199", tag:"Rua Andrade Corvo 31 · 8h–22h" }
-  ]},
-  { group:"Casamento", items:[
-    { name:"Site do casamento", url:"https://www.theknot.com", tag:"Lucie & Thiago" },
-    { name:"Airbnb noivo (manhã 23/5)", maps:"Rua Formosa 178 Porto", tag:"Rua Formosa 178" },
-    { name:"Embarque ônibus oficial", maps:"Praça da Batalha Porto", tag:"Praça da Batalha · 13:30 em ponto" }
-  ]}
-];
+const CONTACTS = [];
+
 
 /* ----------------- PERFIS (Quiz) ----------------- */
 const PROFILES = [
@@ -2024,17 +1598,8 @@ const PROFILES = [
   }
 ];
 
-const COMPAT = [
-  { topic:"Ritmo do dia", verdict:"alinhados", note:"Ambos preferem plano-base com 2-3 paradas e folgas." },
-  { topic:"Pontualidade", verdict:"divergência leve", note:"Amanda valoriza horário, Caio relaxa em viagem. Combinar âncoras: almoço/jantar sim, demais nem." },
-  { topic:"Acordar", verdict:"divergência", note:"Amanda 8-9h, Caio quando o corpo pedir. Não forçar manhã muito cedo." },
-  { topic:"Museus", verdict:"divergência forte", note:"Amanda meio dia, Caio 1-2h. Sugestão: Amanda faz longo nos Jerónimos, Caio aproveita Belém solo." },
-  { topic:"Gastronomia", verdict:"divergência", note:"Caio quer tudo (polvo, percebes); Amanda evita marisco. Pedir compartilhados, deixar opções seguras." },
-  { topic:"Caminhada", verdict:"divergência leve", note:"Caio 15km+, Amanda 8-15km. Uber estratégico nas voltas." },
-  { topic:"Vinho", verdict:"divergência", note:"Caio quer vinícolas; Amanda neutra. Já há almoço em vinícola dia 4." },
-  { topic:"Compras", verdict:"divergência", note:"Amanda quer dias de compras; Caio só item especial. Combinar tarde de compras em Lisboa." },
-  { topic:"Noite", verdict:"alinhados-ish", note:"Caio gosta de caminhada noturna leve; Amanda prefere recolher. Pé na rua sem grandes andanças." }
-];
+const COMPAT = [];
+
 
 const PHRASES = [
   { pt:"Sumo de laranja natural, por favor", br:"Suco de laranja natural" },
@@ -2852,9 +2417,33 @@ function fmtFullDate(d){
   const dows = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
   return dows[d.getDay()] + ', ' + fmtDate(d);
 }
+/* ---- Viagem definida pelo usuário (app em branco) ---- */
+function tripStart(){ try{ return (state.x2&&state.x2.trip&&state.x2.trip.start)||TRIP.startDate||''; }catch(e){ return TRIP.startDate||''; } }
+function tripEnd(){ try{ return (state.x2&&state.x2.trip&&state.x2.trip.end)||TRIP.endDate||''; }catch(e){ return TRIP.endDate||''; } }
+function tripTitle(){ try{ return (state.x2&&state.x2.trip&&state.x2.trip.title)||TRIP.title||''; }catch(e){ return TRIP.title||''; } }
+function tripIsBlank(){ return !tripStart() || !tripEnd(); }
+function syncDays(){
+  DAYS.length = 0;
+  var s = tripStart(), e = tripEnd();
+  if(!s || !e) return DAYS;
+  var ds = new Date(s+'T12:00:00'), de = new Date(e+'T12:00:00');
+  if(isNaN(ds) || isNaN(de) || de < ds) return DAYS;
+  var dows = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  var n = 1;
+  for(var d = new Date(ds); d <= de; d.setDate(d.getDate()+1)){
+    var iso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    DAYS.push({ n:n, date:iso, dow:dows[d.getDay()], title:'', city:'', cover:'', svg:'', where:'', tag:'Dia '+n });
+    n++;
+  }
+  return DAYS;
+}
 function currentDayNum(){
+  syncDays();
+  const s = tripStart();
+  if(!s) return 0;
   const t = today();
-  const start = parseDate(TRIP.startDate);
+  const start = parseDate(s);
+  if(isNaN(start)) return 0;
   const delta = daysBetween(start, t);
   if(delta < 0) return 0;
   if(delta >= DAYS.length) return 99;
@@ -2863,6 +2452,27 @@ function currentDayNum(){
 function currentDay(){
   const n = currentDayNum();
   return DAYS.find(d => d.n === n);
+}
+function invitePeople(){
+  // Convite universal: funciona em modo nativo e com Firebase.
+  // Se o cloud.js expôs um link de convite (com config embutida), usa ele.
+  let link = '';
+  try { if(typeof window.plottiInviteLink === 'function') link = window.plottiInviteLink() || ''; } catch(e){}
+  if(!link) link = location.origin + location.pathname;
+  const ttl = (typeof tripTitle === 'function' && tripTitle()) ? tripTitle() : 'nossa viagem';
+  const msg = `Bora organizar ${ttl} no Plotti? Abra: ${link}`;
+  if(navigator.share){
+    navigator.share({ title:'Plotti', text:msg, url:link }).catch(()=>{});
+    return;
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(msg).then(
+      ()=>{ try{ toast('Link copiado — mande no grupo'); }catch(e){ alert('Link copiado:\n'+link); } },
+      ()=>{ alert('Convide com este link:\n'+link); }
+    );
+    return;
+  }
+  alert('Convide com este link:\n'+link);
 }
 function nextEvent(){
   const dayN = currentDayNum();
@@ -2948,10 +2558,42 @@ function renderHoje(){
   const dayN = currentDayNum();
   const day = currentDay();
   const t = today();
-  const start = parseDate(TRIP.startDate);
-  const end = parseDate(TRIP.endDate);
+  const start = parseDate(tripStart());
+  const end = parseDate(tripEnd());
+  const blank = tripIsBlank();
 
   let heroBlock, nextBlock = '';
+
+  if(blank){
+    // App em branco: sem viagem cadastrada. O card "Cadastrar agora"
+    // (injectHojeTrip) entra no topo automaticamente — não duplicar aqui.
+    const hasProfile = !!state.activeProfile;
+    heroBlock = `
+      <div class="hero" style="min-height:240px">
+        <div class="hero-veil"></div>
+        <div class="hero-body" style="padding-top:120px">
+          <div class="hero-eyebrow">PLOTTI · VIAGEM EM GRUPO</div>
+          <h1 class="hero-title" style="font-size:clamp(30px,7vw,42px)">Crie a sua viagem</h1>
+          <div class="hero-sub">Defina o período e os destinos no card abaixo. Depois convide os outros viajantes.</div>
+        </div>
+      </div>
+    `;
+    nextBlock = hasProfile ? `
+      <div class="section">
+        <div class="section-head"><h2 class="serif">Próximo passo</h2></div>
+        <div class="pad">
+          <div class="tl-card">
+            <div class="tl-title">Convide os outros viajantes</div>
+            <div class="tl-sub">Eles entram na mesma viagem pelo link.</div>
+            <div class="tl-actions"><button class="tl-action primary" id="hoje-invite">${ICONS.phone||ICONS.bubble||''}<span>Convidar viajantes</span></button></div>
+          </div>
+        </div>
+      </div>
+    ` : '';
+    $('#hoje-content').innerHTML = heroBlock + nextBlock + '<div class="spacer-lg"></div>';
+    const _inv = $('#hoje-invite'); if(_inv) _inv.addEventListener('click', invitePeople);
+    return;
+  }
 
   if(dayN === 0){
     const dias = daysBetween(t, start);
@@ -2989,7 +2631,7 @@ function renderHoje(){
         <div class="hero-body" style="padding-top:160px">
           <div class="hero-eyebrow">CONTAGEM REGRESSIVA · D-${dias}</div>
           <h1 class="hero-title" style="font-size:clamp(32px,7vw,46px)">${dias === 0 ? 'É hoje.' : dias === 1 ? 'Amanhã embarcamos.' : `Faltam ${dias} dias.`}</h1>
-          <div class="hero-sub">Portugal · ${fmtDate(start)} a ${fmtDate(parseDate(TRIP.endDate))} · casamento Lucie & Thiago</div>
+          <div class="hero-sub">${tripTitle() ? tripTitle()+' · ' : ''}${fmtDate(start)} a ${fmtDate(end)}</div>
         </div>
       </div>
       <div class="status-strip">
@@ -3006,9 +2648,7 @@ function renderHoje(){
           <h2 class="serif">Antes de embarcar</h2>
         </div>
         <div class="quick-grid">
-          <button class="qa" data-go="mais" data-sub="checklist"><div class="qa-icon">${ICONS.bag}</div><span>Checklist</span></button>
-          <button class="qa" data-go="mais" data-sub="hoteis"><div class="qa-icon">${ICONS.hotel}</div><span>Hotéis</span></button>
-          <button class="qa accent" data-go="mais" data-sub="docs"><div class="qa-icon">${ICONS.doc}</div><span>Documentos</span></button>
+          <button class="qa accent" data-go="mais" data-sub="checklist"><div class="qa-icon">${ICONS.bag}</div><span>Checklist</span></button>
         </div>
       </div>
     `;
@@ -3020,7 +2660,7 @@ function renderHoje(){
         <div class="hero-body">
           <div class="hero-eyebrow">Viagem encerrada</div>
           <h1 class="hero-title">Bem-vindos de volta</h1>
-          <div class="hero-sub">8 dias, 3 hotéis, 555 km, um casamento.</div>
+          <div class="hero-sub">${DAYS.length?DAYS.length+' dias de viagem.':'A viagem terminou.'}</div>
         </div>
       </div>
     `;
@@ -3130,13 +2770,31 @@ function renderHoje(){
     </div>
   `;
 
-  $('#hoje-content').innerHTML = heroBlock + nextBlock + quickBlock + railBlock + '<div class="spacer-lg"></div>';
+  const inTrip = (dayN >= 1 && dayN !== 99);
+  $('#hoje-content').innerHTML = heroBlock + nextBlock
+    + (inTrip ? quickBlock : '')
+    + (DAYS.length ? railBlock : '')
+    + '<div class="spacer-lg"></div>';
 }
 
 /* ============================================================
    VIEW: ROTEIRO
    ============================================================ */
 function renderRoteiro(selectedDay){
+  syncDays();
+  if(!DAYS.length){
+    $('#roteiro-content').innerHTML = `
+      <div class="pad mt-16"><h1 class="serif" style="font-size:24px">Roteiro</h1></div>
+      <div class="pad mt-8">
+        <div class="tl-card">
+          <div class="tl-title">Sem viagem definida ainda</div>
+          <div class="tl-sub">Cadastre o período da viagem na tela Hoje (card "Cadastrar agora"). Os dias aparecem aqui automaticamente.</div>
+          <div class="tl-actions"><button class="tl-action primary" data-go="hoje">${ICONS.clock||''}<span>Ir para Hoje</span></button></div>
+        </div>
+      </div>
+      <div class="spacer-lg"></div>`;
+    return;
+  }
   const raw = selectedDay ?? state.viewDay ?? currentDayNum() ?? 1;
   const dayN = parseInt(raw, 10) || 1;
   const day = DAYS.find(d => d.n === dayN) || DAYS[0];
@@ -3220,131 +2878,11 @@ function renderRoteiro(selectedDay){
 /* ============================================================
    FASE 1 · TABULEIRO — paradas + missões + selos
    ============================================================ */
-const BOARD_STOPS = [
-  { id:"porto-1",  day:1, label:"Porto",        sub:"Chegada · Mirajazz",        x:130, y:70,  emoji:"🛬" },
-  { id:"porto-2",  day:2, label:"Casamento",    sub:"Quinta · ⭐",               x:180, y:110, milestone:true, emoji:"💍" },
-  { id:"porto-3",  day:3, label:"Porto",        sub:"Ressaca · Ribeira",         x:120, y:155, emoji:"🌉" },
-  { id:"douro",    day:4, label:"Vale do Douro",sub:"Pinhão · Quinta",           x:230, y:185, emoji:"🍷" },
-  { id:"obidos",   day:5, label:"Óbidos",       sub:"Vila das Rainhas",          x:140, y:280, emoji:"🏰" },
-  { id:"fatima",   day:5, label:"Fátima",       sub:"Santuário",                 x:220, y:320, emoji:"⛪" },
-  { id:"lisboa",   day:6, label:"Lisboa",       sub:"Baixa · Alfama",            x:135, y:390, emoji:"🚋" },
-  { id:"belem",    day:7, label:"Belém",        sub:"Jerónimos · Pastéis",       x:90,  y:435, emoji:"🥧" },
-  { id:"voo",      day:8, label:"Despedida",    sub:"Voo TP 35",                 x:200, y:475, emoji:"✈️" }
-];
+const BOARD_STOPS = [];
 
-const MISSIONS = {
-  "porto-1": {
-    coletivas: [
-      { id:"checkin-casa-rosa", text:"Check-in na Casa Rosa" },
-      { id:"mirajazz-grupo",    text:"Primeira taça no Mirajazz, os quatro juntos" }
-    ],
-    individuais: {
-      caio:   { id:"cafe-escondido-porto", text:"Achar um café escondido no Porto" },
-      amanda: { id:"prato-tasca",          text:"Pedir o prato mais local da tasca" },
-      lucas:  { id:"foto-azulejo",         text:"Fotografar um azulejo de São Bento" },
-      bruna:  { id:"vinho-verde",          text:"Provar um vinho verde diferente" }
-    }
-  },
-  "porto-2": {
-    coletivas: [
-      { id:"foto-padrinhos", text:"Foto dos quatro no airbnb do Thiago" },
-      { id:"brinde-noivos",  text:"Brinde com os noivos depois da cerimônia" },
-      { id:"selo-casamento", text:"Marcar o selo do dia mais importante" }
-    ],
-    individuais: {
-      caio:   { id:"discurso",        text:"Cumprir o papel de padrinho com elegância" },
-      amanda: { id:"detalhe-noiva",   text:"Notar um detalhe da decoração da Lucie" },
-      lucas:  { id:"video-momento",   text:"Gravar um vídeo curto da entrada" },
-      bruna:  { id:"abraco-noiva",    text:"Abraçar a Lucie antes da festa" }
-    }
-  },
-  "porto-3": {
-    coletivas: [
-      { id:"francesinha",   text:"Comer francesinha juntos (cura da ressaca)" },
-      { id:"por-do-sol",    text:"Pôr do sol no Jardim do Morro" }
-    ],
-    individuais: {
-      caio:   { id:"caminhar-ribeira", text:"Caminhar a Ribeira inteira" },
-      amanda: { id:"loja-portuguesa",  text:"Achar algo em A Vida Portuguesa" },
-      lucas:  { id:"travessia-ponte",  text:"Atravessar a Luís I pelo tabuleiro inferior" },
-      bruna:  { id:"porto-tonico",     text:"Pedir um Porto Tônico em Gaia" }
-    }
-  },
-  "douro": {
-    coletivas: [
-      { id:"almoco-clara",  text:"Almoço na Cozinha da Clara" },
-      { id:"foto-vinhedo",  text:"Foto dos quatro nos vinhedos" },
-      { id:"jantar-quinta", text:"Jantar na Quinta São Luiz" }
-    ],
-    individuais: {
-      caio:   { id:"degustar-tres",  text:"Degustar três Portos diferentes" },
-      amanda: { id:"vista-quinta",   text:"Ver o pôr do sol da Quinta" },
-      lucas:  { id:"dirigir-n222",   text:"Dirigir a N222 sem reclamar das curvas" },
-      bruna:  { id:"estacao-pinhao", text:"Fotografar os azulejos da Estação" }
-    }
-  },
-  "obidos": {
-    coletivas: [
-      { id:"ginja-chocolate", text:"Ginja em copinho de chocolate, os quatro" },
-      { id:"muralha-obidos",  text:"Subir um trecho da muralha" }
-    ],
-    individuais: {
-      caio:   { id:"rua-direita",  text:"Percorrer a Rua Direita inteira" },
-      amanda: { id:"livraria",     text:"Entrar numa livraria de Óbidos" },
-      lucas:  { id:"selfie-porta", text:"Selfie na Porta da Vila" },
-      bruna:  { id:"chocolate",    text:"Trazer chocolate para casa" }
-    }
-  },
-  "fatima": {
-    coletivas: [
-      { id:"missa-fatima", text:"Participar da missa na Capelinha" },
-      { id:"vela-fatima",  text:"Acender uma vela coletiva" }
-    ],
-    individuais: {
-      caio:   { id:"silencio-cova", text:"Cinco minutos de silêncio na Cova da Iria" },
-      amanda: { id:"prece-pessoal", text:"Fazer uma prece pessoal" },
-      lucas:  { id:"foto-basilica", text:"Foto da Basílica do Rosário" },
-      bruna:  { id:"recordacao",    text:"Levar uma recordação para alguém" }
-    }
-  },
-  "lisboa": {
-    coletivas: [
-      { id:"arco-augusta",   text:"Subir o Arco da Rua Augusta os quatro" },
-      { id:"timeout-mesa",   text:"Mesa comunitária no Time Out, prato compartilhado" },
-      { id:"electrico-28",   text:"Andar de elétrico 28 sentados" }
-    ],
-    individuais: {
-      caio:   { id:"miradouro-cerveja", text:"Cerveja no Miradouro Senhora do Monte" },
-      amanda: { id:"compras-chiado",    text:"Comprar algo no Chiado" },
-      lucas:  { id:"pink-street",       text:"Foto na Pink Street vazia" },
-      bruna:  { id:"fado-jantar",       text:"Ouvir fado de raspão no jantar" }
-    }
-  },
-  "belem": {
-    coletivas: [
-      { id:"jeronimos-tour", text:"Visita guiada aos Jerónimos" },
-      { id:"pastel-belem",   text:"Pastel de Belém quente, em pé, no balcão" },
-      { id:"torre-foto",     text:"Foto na Torre de Belém" }
-    ],
-    individuais: {
-      caio:   { id:"camoes-tumulo",  text:"Parar 30s no túmulo de Camões" },
-      amanda: { id:"audio-guia",     text:"Ouvir o áudio-guia inteiro" },
-      lucas:  { id:"ler-devagar",    text:"Visitar a livraria Ler Devagar" },
-      bruna:  { id:"saleiro-ceramica", text:"Achar o saleiro de cerâmica do Caio" }
-    }
-  },
-  "voo": {
-    coletivas: [
-      { id:"foto-aeroporto", text:"Foto dos quatro antes do embarque" }
-    ],
-    individuais: {
-      caio:   { id:"despedida-cafe", text:"Último galão português" },
-      amanda: { id:"tax-free",       text:"Validar o tax-free" },
-      lucas:  { id:"caderno-viagem", text:"Anotar uma frase do que viu" },
-      bruna:  { id:"presente-casa",  text:"Levar algo simbólico para casa" }
-    }
-  }
-};
+
+const MISSIONS = {};
+
 
 function isMissionDone(stopId, missionId){
   return !!(state.missions && state.missions[stopId] && state.missions[stopId][missionId]);
@@ -3369,6 +2907,19 @@ function stopProgress(stopId){
    VIEW: MAPA — Tabuleiro (default) + Satélite (toggle)
    ============================================================ */
 function renderMapa(){
+  if(!BOARD_STOPS.length){
+    $('#mapa-content').innerHTML = `
+      <div class="pad mt-16"><h1 class="serif" style="font-size:24px">Mapa</h1></div>
+      <div class="pad mt-8">
+        <div class="tl-card">
+          <div class="tl-title">Sem pontos no mapa ainda</div>
+          <div class="tl-sub">O mapa do tabuleiro aparece quando a viagem e os pontos forem definidos.</div>
+          <div class="tl-actions"><button class="tl-action primary" data-go="hoje">${ICONS.clock||''}<span>Ir para Hoje</span></button></div>
+        </div>
+      </div>
+      <div class="spacer-lg"></div>`;
+    return;
+  }
   const mode = state.mapMode || 'board';
   const head = `
     <div class="board-modes">
@@ -4224,7 +3775,7 @@ function toggleTheme(){
   applyTheme();
 }
 
-const APP_VERSION = 'v6.4';
+const APP_VERSION = 'v6.5';
 let deferredInstall;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
@@ -4314,6 +3865,7 @@ document.addEventListener('click', (e) => {
 });
 
 $('#btn-theme')?.addEventListener('click', toggleTheme);
+$('#btn-invite')?.addEventListener('click', invitePeople);
 
 function updateFab(){
   const fab = $('#fab-action');
