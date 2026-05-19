@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Plotti · Wordmark principal — fundos claros · converter texto em path no uso final -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 152" width="440" height="152" role="img" aria-label="Plotti">
+  <title>Plotti</title>
+  <text x="0" y="120" font-family="Fraunces, 'Times New Roman', serif" font-weight="700" font-size="136" fill="#2A3F31" letter-spacing="-6" font-variation-settings="'opsz' 144">Plott</text>
+  <text x="344" y="120" font-family="Fraunces, 'Times New Roman', serif" font-weight="700" font-size="136" fill="#2A3F31" font-variation-settings="'opsz' 144">i</text>
+  <circle cx="374" cy="40" r="14" fill="#C25E3D"/>
+</svg>

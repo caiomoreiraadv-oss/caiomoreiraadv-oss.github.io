@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Plotti · Símbolo isolado (sem fundo) — favicon, avatar, monograma -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800" role="img" aria-label="Plotti símbolo">
+  <title>Plotti</title>
+  <path d="M 200 640 V 160 H 462 Q 634 160 634 312 Q 634 464 462 464 H 302" stroke="#3F5B47" stroke-width="86" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="634" cy="640" r="74" fill="#C25E3D"/>
+  <circle cx="634" cy="640" r="28" fill="#F6F0E1"/>
+</svg>

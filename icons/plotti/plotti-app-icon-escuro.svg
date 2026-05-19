@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Plotti · App icon — variante noturna -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Plotti app icon noite">
+  <title>Plotti</title>
+  <rect width="1024" height="1024" rx="224" fill="#2A3F31"/>
+  <path d="M 90 880 Q 220 740 360 800 T 640 720 T 940 540" stroke="#3F5B47" stroke-width="14" fill="none" stroke-linecap="round" opacity="0.55"/>
+  <path d="M 318 760 V 280 H 580 Q 752 280 752 432 Q 752 584 580 584 H 420" stroke="#F6F0E1" stroke-width="86" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="752" cy="760" r="74" fill="#D4A85F"/>
+  <circle cx="752" cy="760" r="28" fill="#2A3F31"/>
+</svg>
