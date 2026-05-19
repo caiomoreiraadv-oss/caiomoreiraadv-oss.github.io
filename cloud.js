@@ -1189,11 +1189,7 @@
       if($('#cl-welcome-g')) return;
       var head=w.querySelector('.welcome-head');
       if(!head) return;
-      // Sem Firebase configurado (link puro): NÃO sequestrar a tela.
-      // Mantém o modo nativo documentado — escolher perfil e entrar offline,
-      // sem dead-end de "configure o Firebase" e sem abrir Nuvem & Login.
-      if(!fbCfg()) return;
-      // Com Firebase (via link de convite): só o botão Google — esconde grade de perfis, "visita" e o botão Google legado.
+      // SEMPRE Google: esconde grade de perfis (vazia), "visita" e o botão Google legado.
       var g=$('#welcome-grid'); if(g) g.style.display='none';
       var gb=$('#btn-google-welcome'); if(gb){ var gw=gb.parentNode; (gw||gb).style.display='none'; }
       var foot=w.querySelector('.welcome-foot'); if(foot) foot.style.display='none';
@@ -1208,11 +1204,21 @@
       head.parentNode.insertBefore(box, head.nextSibling);
       $('#cl-welcome-g').onclick=function(){
         if(!fbCfg()){
-          // App ainda não configurado neste dispositivo (ex.: preview local).
-          // Só o gerente configura; demais usuários nunca veem isto em produção.
-          if(confirm('Este dispositivo ainda não tem o Firebase configurado. Abrir as instruções de configuração (gerente)?')){
-            try{ G.setActiveProfile&&G.setActiveProfile('caio'); }catch(e){}
-            state.maisSub='nuvem'; saveState(); try{ G.goTo('mais'); }catch(e){}
+          // Sem Firebase: mostrar mensagem inline (não pop-up dead-end) com 2 caminhos:
+          // pedir o link de convite ao gerente, ou abrir as instruções de setup.
+          var hint=$('#cl-welcome-hint');
+          if(hint){
+            hint.innerHTML='Este Plotti ainda não foi configurado. '+
+              '<strong>Peça o link de convite</strong> a quem criou a viagem &mdash; '+
+              'ao abrir o convite, o login Google passa a funcionar.<br>'+
+              '<a href="#" id="cl-welcome-setup" style="color:var(--olive);font-weight:600;text-decoration:underline">Sou o gerente · configurar agora</a>';
+            hint.style.fontSize='13px';
+            hint.style.color='var(--ink-soft)';
+            hint.style.marginTop='14px';
+            hint.style.lineHeight='1.5';
+            var s=$('#cl-welcome-setup'); if(s) s.onclick=function(ev){ ev.preventDefault();
+              try{ state.maisSub='nuvem'; saveState(); G.goTo&&G.goTo('mais'); }catch(_){}
+            };
           }
           return;
         }
