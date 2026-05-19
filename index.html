@@ -1187,9 +1187,32 @@ p{color:var(--ink-soft)}
 </div>
 
 <!-- Versão visível no canto inferior direito (discreto, sobre o nav) -->
-<button id="app-version" type="button" onclick="forceUpdate()" aria-label="Atualizar o app para a versão mais recente" title="Atualizar o app" style="position:fixed;bottom:calc(64px + env(safe-area-inset-bottom) + 10px);right:10px;z-index:40;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:9px 14px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--surface);background:var(--olive);border:none;border-radius:999px;box-shadow:0 2px 10px rgba(31,26,20,.20);cursor:pointer;letter-spacing:.02em">&#8635; Atualizar <span style="opacity:.72">v5.9</span></button>
+<button id="app-version" type="button" onclick="forceUpdate()" aria-label="Atualizar o app para a versão mais recente" title="Atualizar o app" style="position:fixed;bottom:calc(64px + env(safe-area-inset-bottom) + 10px);right:10px;z-index:40;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:9px 14px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--surface);background:var(--olive);border:none;border-radius:999px;box-shadow:0 2px 10px rgba(31,26,20,.20);cursor:pointer;letter-spacing:.02em">&#8635; Atualizar <span style="opacity:.72">v6.0</span></button>
 
 <!-- (banner de update removido — atualizações são silenciosas; force-update fica em Mais → Sobre) -->
+
+<!-- Indicador de rede — avisa offline (roaming instável) e confirma reconexão -->
+<div id="net-status" role="status" aria-live="polite" style="position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 8px);z-index:60;max-width:calc(100vw - 24px);display:none;align-items:center;justify-content:center;gap:8px;padding:9px 16px;font-size:12.5px;font-family:'Inter',system-ui,sans-serif;font-weight:600;color:var(--surface);background:var(--terra-dark);border-radius:999px;box-shadow:0 4px 14px rgba(31,26,20,.22);text-align:center;line-height:1.35"></div>
+<script>
+(function(){
+  var el = document.getElementById('net-status');
+  if(!el) return;
+  var hideTimer;
+  function show(msg, bg){ clearTimeout(hideTimer); el.textContent = msg; el.style.background = bg; el.style.display = 'inline-flex'; }
+  function hide(){ el.style.display = 'none'; }
+  function update(reconnected){
+    if(navigator.onLine === false){
+      show('Sem internet — o app continua funcionando: roteiro, mapas salvos, contatos e frases.', 'var(--terra-dark)');
+    } else if(reconnected){
+      show('Conectado de novo.', 'var(--ok)');
+      hideTimer = setTimeout(hide, 2600);
+    } else { hide(); }
+  }
+  window.addEventListener('offline', function(){ update(false); });
+  window.addEventListener('online',  function(){ update(true); });
+  update(false);
+})();
+</script>
 
 <!-- ============================================================
      APP CONTAINER
@@ -4010,6 +4033,12 @@ function renderMais(){
 
   if(sub === 'cambio'){
     const rate = state.fxRate || 6.30;
+    const fxTs = state.fxTs || (state.x2 && state.x2.fx && state.x2.fx.ts) || null;
+    const fxLabel = !fxTs
+      ? 'estimativa — atualize com internet'
+      : (() => { const d = new Date(fxTs), p = n => (n < 10 ? '0' : '') + n;
+          const w = 'cotação de ' + p(d.getDate()) + '/' + p(d.getMonth()+1) + ' ' + p(d.getHours()) + 'h' + p(d.getMinutes());
+          return navigator.onLine === false ? w + ' · sem rede agora' : w; })();
     $('#mais-content').innerHTML = back + `
       <div class="pad mt-16"><h2 class="serif">Câmbio · EUR ↔ BRL</h2></div>
       <div class="fx-box mt-16">
@@ -4018,7 +4047,7 @@ function renderMais(){
           <div class="fx-arrow">${ICONS.arrowR}</div>
           <div class="fx-input"><span>R$</span><input type="number" id="fx-brl" value="${(50*rate).toFixed(2)}" step="1" inputmode="decimal"></div>
         </div>
-        <div class="fx-rate mono">1 EUR ≈ ${rate.toFixed(2)} BRL · estimativa para planejamento</div>
+        <div class="fx-rate mono">1 EUR ≈ ${rate.toFixed(2)} BRL · ${fxLabel}</div>
         <div class="tl-actions" style="border-top:1px dashed var(--line-soft);margin-top:12px;padding-top:12px">
           <button class="tl-action" id="fx-refresh">${ICONS.web}<span>Atualizar cotação</span></button>
         </div>
@@ -4041,8 +4070,13 @@ function renderMais(){
       try {
         const r = await fetch('https://api.exchangerate.host/latest?base=EUR&symbols=BRL');
         const data = await r.json();
-        if(data?.rates?.BRL){ state.fxRate = data.rates.BRL; saveState(); renderMais(); }
-      } catch(e){ alert('Sem conexão para atualizar cotação.'); }
+        if(data?.rates?.BRL){
+          state.fxRate = data.rates.BRL;
+          state.fxTs = Date.now();
+          if(state.x2) state.x2.fx = { rate: data.rates.BRL, ts: state.fxTs };
+          saveState(); renderMais();
+        } else { (window.toast || alert)('Não foi possível atualizar agora — usando a última cotação salva.'); }
+      } catch(e){ (window.toast || alert)('Sem internet agora — usando a última cotação salva.'); }
     });
     return;
   }
@@ -4142,7 +4176,7 @@ function toggleTheme(){
   applyTheme();
 }
 
-const APP_VERSION = 'v5.9';
+const APP_VERSION = 'v6.0';
 let deferredInstall;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();

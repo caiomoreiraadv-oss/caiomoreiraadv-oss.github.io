@@ -1,5 +1,12 @@
 # PT-2026 · Changelog
 
+## v6.0 · 19 maio 2026 · Blindagem do modo offline (roaming instável em viagem)
+
+- **Aviso de rede:** uma faixa discreta no topo aparece quando o celular fica **sem internet**, tranquilizando que o app continua funcionando (roteiro, mapas salvos, contatos, frases). Some sozinha e confirma **"Conectado de novo"** ao voltar a rede. Usa `navigator.onLine` + eventos `online`/`offline`.
+- **Câmbio com data:** as duas telas de câmbio (Mais → Câmbio e Caixinha → Câmbio) agora mostram **de quando é a cotação** (ex.: "cotação de 21/05 14h30") em vez de só "estimativa/atualizada". Offline, avisa **"sem rede agora"** para o viajante saber que o valor pode estar velho. Cotação e data sincronizadas entre as duas telas.
+- **Sem `alert` travando:** atualizar a cotação sem internet não trava mais com um pop-up; usa aviso leve e mantém a última cotação salva.
+- Mudanças 100% aditivas — nenhuma lógica existente removida; zero regressão de usabilidade.
+
 ## v5.5 · 19 maio 2026 · Brand book aplicado ao layout (editorial/atlas)
 
 - **Fundo:** removida a bandeira de Portugal + véu escuro; agora pergaminho Plotti com traço cartográfico pontilhado sutil (claro e escuro). App inteiro clareou para o editorial do brand.

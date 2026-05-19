@@ -80,8 +80,15 @@
     function refreshFx(cb){
       fetch('https://api.exchangerate.host/latest?base=EUR&symbols=BRL')
         .then(function(r){ return r.json(); })
-        .then(function(d){ if(d && d.rates && d.rates.BRL){ X.fx={rate:d.rates.BRL, ts:Date.now()}; state.fxRate=d.rates.BRL; px(); cb && cb(true); } else cb && cb(false); })
+        .then(function(d){ if(d && d.rates && d.rates.BRL){ X.fx={rate:d.rates.BRL, ts:Date.now()}; state.fxRate=d.rates.BRL; state.fxTs=X.fx.ts; px(); cb && cb(true); } else cb && cb(false); })
         .catch(function(){ cb && cb(false); });
+    }
+    function fxStamp(){
+      var ts = (X.fx && X.fx.ts) || state.fxTs;
+      if(!ts) return 'estimativa — atualize com internet';
+      var d=new Date(ts), p=function(n){ return (n<10?'0':'')+n; };
+      var when='cotação de '+p(d.getDate())+'/'+p(d.getMonth()+1)+' '+p(d.getHours())+'h'+p(d.getMinutes());
+      return (navigator.onLine===false) ? when+' · sem rede agora' : when;
     }
 
     /* ---------- categorias automáticas ---------- */
@@ -230,7 +237,7 @@
         '<div style="text-align:center;color:var(--ink-muted);margin:8px 0">▼ ▲</div>' +
         '<label class="x2-l">Reais (R$)</label>' +
         '<input id="fxc-brl" class="x2-in" type="number" inputmode="decimal" value="'+(50*r).toFixed(2)+'" style="font-size:22px;font-family:\'Fraunces\',serif">' +
-        '<div class="text-muted text-small" style="margin-top:10px">1 € ≈ R$ '+r.toFixed(2)+' · '+(X.fx?'cotação atualizada':'estimativa')+'</div>' +
+        '<div class="text-muted text-small" style="margin-top:10px">1 € ≈ R$ '+r.toFixed(2)+' · '+fxStamp()+'</div>' +
         '<button id="fxc-up" class="btn ghost sm" style="margin-top:10px">Atualizar cotação</button>' +
         '</div>' +
         '<div class="tl-card" style="margin-top:12px"><div class="eyebrow">Dica</div><p class="text-soft text-small" style="margin-top:6px">Caixas <strong>Multibanco</strong> (logo verde) cobram menos taxa que Euronet (logo azul). Evite casas de câmbio de rua.</p></div></div>';
