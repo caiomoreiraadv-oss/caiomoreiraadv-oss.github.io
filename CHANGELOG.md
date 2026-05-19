@@ -1,5 +1,11 @@
 # PT-2026 · Changelog
 
+## v6.4 · 19 maio 2026 · Correção: link puro travava exigindo Firebase
+
+- **Bug:** abrir o link direto (sem convite) mostrava só "Entrar com Google" e, ao tocar, um `confirm()` sem saída pedindo configurar o Firebase. Pior: ao confirmar, ele logava como "caio" e abria direto em **Nuvem & Login** em vez da tela inicial.
+- **Causa:** o `enhanceWelcome` sequestrava a tela de boas-vindas e forçava Google mesmo sem Firebase, com dead-end de configuração.
+- **Correção:** sem Firebase configurado, a tela de boas-vindas **nativa** volta a aparecer (escolher perfil e entrar offline) — exatamente o "Modo nativo" que o app documenta. Com Firebase (via link de convite), o fluxo Google segue igual. Mudança mínima, sem regressão.
+
 ## v6.3 · 19 maio 2026 · Lembretes do roteiro (alarme no calendário)
 
 - **O .ics agora toca antes:** cada evento com horário leva alarme **30 min antes**; voos, check-in, reservas e marcos levam um alarme extra **3 h antes**. Adicionado via `VALARM` no iCalendar (RFC 5545).

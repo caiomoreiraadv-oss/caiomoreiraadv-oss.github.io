@@ -1189,7 +1189,11 @@
       if($('#cl-welcome-g')) return;
       var head=w.querySelector('.welcome-head');
       if(!head) return;
-      // SEMPRE só o botão Google: esconde grade de perfis, "visita" e o botão Google legado.
+      // Sem Firebase configurado (link puro): NÃO sequestrar a tela.
+      // Mantém o modo nativo documentado — escolher perfil e entrar offline,
+      // sem dead-end de "configure o Firebase" e sem abrir Nuvem & Login.
+      if(!fbCfg()) return;
+      // Com Firebase (via link de convite): só o botão Google — esconde grade de perfis, "visita" e o botão Google legado.
       var g=$('#welcome-grid'); if(g) g.style.display='none';
       var gb=$('#btn-google-welcome'); if(gb){ var gw=gb.parentNode; (gw||gb).style.display='none'; }
       var foot=w.querySelector('.welcome-foot'); if(foot) foot.style.display='none';
