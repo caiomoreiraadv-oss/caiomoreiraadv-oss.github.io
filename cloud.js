@@ -525,7 +525,10 @@
             saveState();
             var cur=document.querySelector('.view.active');
             var v=cur&&cur.dataset.view;
-            if(v==='mais'){ try{ G.renderMais(); }catch(e){} }
+            // NÃO re-renderizar a tela de configuração "Nuvem" em cada tick de sync:
+            // ela não depende de dados ao vivo e o re-mount mata o scroll/foco
+            // (impedia rolar até o card "Convidar"). Demais telas seguem ao vivo.
+            if(v==='mais' && (state.maisSub||'home')!=='nuvem'){ try{ G.renderMais(); }catch(e){} }
             if((state.x2&&state.x2._roteiroDirty) && v==='roteiro'){ try{ G.renderRoteiro&&G.renderRoteiro(); }catch(e){} }
             if(v==='hoje'){ try{ G.renderHoje&&G.renderHoje(); }catch(e){} }
             if(state.x2) state.x2._roteiroDirty=false;

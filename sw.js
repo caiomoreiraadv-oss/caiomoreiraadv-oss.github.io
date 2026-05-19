@@ -1,5 +1,5 @@
-// Plotti Service Worker · v5.5 · network-first p/ HTML+JS (fim do cache preso)
-const VERSION = 'plotti-v5.5';
+// Plotti Service Worker · v5.6 · network-first p/ HTML+JS (fim do cache preso)
+const VERSION = 'plotti-v5.6';
 const CORE = [
   './',
   './index.html',
