@@ -1,5 +1,14 @@
 # PT-2026 · Changelog
 
+## v6.7 · 19 maio 2026 · Welcome zerado + sempre Google (Etapa 1.b)
+
+- **Subtítulo "Portugal · 22–29 maio 2026" removido** do welcome → "PLOTTI · VIAGEM EM GRUPO".
+- **Os 4 perfis hardcoded (Caio/Amanda/Lucas/Bruna) saíram** — `PROFILES = []`. A grade do welcome fica escondida; só o botão "Entrar com Google" aparece.
+- **"Sou visita · só olhar" escondido** (modo guest desativado).
+- **Sempre login Google** ao abrir: `enhanceWelcome` voltou a forçar o Google em todos os casos (revertendo o fallback nativo de v6.4, que mostrava os 4 cards).
+- **Sem mais pop-up dead-end:** se o dispositivo não tem Firebase, em vez do `confirm("Abrir instruções?")`, aparece uma mensagem inline: "Peça o link de convite ao gerente — ao abrir o convite, o login Google passa a funcionar" + link "Sou o gerente · configurar agora" que abre Mais → Nuvem & Login.
+- **Checklist genérico**: lista de embarque agora tem itens universais (passaporte, carregador, adaptador, remédios, etc.), sem hotéis/CNH específicos de Portugal.
+
 ## v6.6 · 19 maio 2026 · Assistente de instalação (install.html)
 
 - Nova página `install.html` — o link "para virar app na tela do celular". Detecta sozinho o aparelho/navegador e mostra o caminho certo:
