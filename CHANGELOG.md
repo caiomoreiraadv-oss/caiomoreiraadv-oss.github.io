@@ -1,5 +1,11 @@
 # PT-2026 · Changelog
 
+## v6.3 · 19 maio 2026 · Lembretes do roteiro (alarme no calendário)
+
+- **O .ics agora toca antes:** cada evento com horário leva alarme **30 min antes**; voos, check-in, reservas e marcos levam um alarme extra **3 h antes**. Adicionado via `VALARM` no iCalendar (RFC 5545).
+- **Por que assim (honesto):** o app é estático (GitHub Pages, sem servidor) e iPhone só dá push de PWA instalado. Notificação por servidor não é possível. O calendário do aparelho é o único caminho que **funciona com o app fechado, offline e sem login** — e já era o mecanismo de export do roteiro; só faltava o alarme.
+- Texto de Mais → Calendar atualizado explicando o lembrete. Mudança aditiva, sem regressão.
+
 ## v6.2 · 19 maio 2026 · Caixinha redonda — marcar acerto como pago
 
 - **Marcar como pago:** cada linha de acerto em Saldos ganhou o botão **"Marcar como pago"**. Ao confirmar, o pagamento entra como um lançamento de acerto e **a dívida zera** — antes ela ficava para sempre (tinha que inventar uma despesa invertida).

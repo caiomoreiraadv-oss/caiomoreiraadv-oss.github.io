@@ -1112,7 +1112,7 @@
           '<a class="tl-action" target="_blank" href="https://secure.splitwise.com">'+ic('web')+'<span>Abrir Splitwise</span></a></div></div>'+
 
         '<div class="tl-card" style="margin-top:14px"><div class="eyebrow">'+ic('clock')+' Google Calendar</div>'+
-          '<p class="text-soft text-small" style="margin-top:6px">Manda os 47 eventos do roteiro para o seu calendário. O .ics funciona em qualquer iPhone, sem login.</p>'+
+          '<p class="text-soft text-small" style="margin-top:6px">Manda os 47 eventos do roteiro para o seu calendário, <strong>já com lembrete que toca antes</strong> (30 min antes; 3 h antes em voos, check-in e reservas) — funciona com o app fechado, offline e sem login, em qualquer iPhone.</p>'+
           '<div class="tl-actions"><button class="tl-action primary" id="cal-ics">'+ic('doc')+'<span>Baixar .ics (roteiro)</span></button>'+
           '<button class="tl-action" data-sub="google">'+ic('arrowR')+'<span>Opções Google</span></button></div></div>'+
 

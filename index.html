@@ -1187,7 +1187,7 @@ p{color:var(--ink-soft)}
 </div>
 
 <!-- Versão visível no canto inferior direito (discreto, sobre o nav) -->
-<button id="app-version" type="button" onclick="forceUpdate()" aria-label="Atualizar o app para a versão mais recente" title="Atualizar o app" style="position:fixed;bottom:calc(64px + env(safe-area-inset-bottom) + 10px);right:10px;z-index:40;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:9px 14px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--surface);background:var(--olive);border:none;border-radius:999px;box-shadow:0 2px 10px rgba(31,26,20,.20);cursor:pointer;letter-spacing:.02em">&#8635; Atualizar <span style="opacity:.72">v6.2</span></button>
+<button id="app-version" type="button" onclick="forceUpdate()" aria-label="Atualizar o app para a versão mais recente" title="Atualizar o app" style="position:fixed;bottom:calc(64px + env(safe-area-inset-bottom) + 10px);right:10px;z-index:40;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:9px 14px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--surface);background:var(--olive);border:none;border-radius:999px;box-shadow:0 2px 10px rgba(31,26,20,.20);cursor:pointer;letter-spacing:.02em">&#8635; Atualizar <span style="opacity:.72">v6.3</span></button>
 
 <!-- (banner de update removido — atualizações são silenciosas; force-update fica em Mais → Sobre) -->
 
@@ -2308,6 +2308,15 @@ function buildICS(){
     lines.push(`SUMMARY:${icsEscape(summary)}`);
     lines.push(`DESCRIPTION:${desc}`);
     if(loc) lines.push(`LOCATION:${icsEscape(loc)}`);
+    if(m){
+      const alarmDesc = icsEscape('Plotti · ' + ev.title);
+      const big = (ev.milestone || ev.type === 'milestone')
+        || /vo[oô]|embarque|aeroporto|check\s?-?in|transfer|sixt|carro|aluguel|reserva/i.test((ev.title||'') + ' ' + (ev.sub||''));
+      lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${alarmDesc}`, 'TRIGGER:-PT30M', 'END:VALARM');
+      if(big){
+        lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${alarmDesc}`, 'TRIGGER:-PT3H', 'END:VALARM');
+      }
+    }
     lines.push('END:VEVENT');
   });
   lines.push('END:VCALENDAR');
@@ -4215,7 +4224,7 @@ function toggleTheme(){
   applyTheme();
 }
 
-const APP_VERSION = 'v6.2';
+const APP_VERSION = 'v6.3';
 let deferredInstall;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
