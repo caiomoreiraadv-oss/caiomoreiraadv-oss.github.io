@@ -176,6 +176,8 @@
     function friendlyAuthErr(e){
       var code=(e && (e.code||e.message))||'';
       if(/NO_GIS_CLIENT_ID/.test(code)) return 'No iPhone, o login Google precisa do Web Client ID configurado em Mais → Nuvem & Login. Toque em "Sou o gerente · configurar agora" e siga as instruções.';
+      if(/admin-restricted-operation|operation-not-allowed/i.test(code)) return 'Login anônimo não está habilitado no Firebase. O gerente precisa abrir Firebase Console → Authentication → Sign-in method → Anonymous → Enable (1 clique).';
+      if(/origin_mismatch|origin-mismatch/i.test(code)) return 'O endereço do app (caiomoreiraadv-oss.github.io) ainda não está autorizado no OAuth. Adicione em Google Cloud Console → APIs & Services → Credentials → seu Web Client → Authorized JavaScript origins.';
       if(/popup-blocked|popup_blocked/i.test(code)) return 'Seu navegador bloqueou a janela do Google. Tentando outro caminho…';
       if(/popup-closed-by-user|cancelled-popup-request|popup_closed/i.test(code)) return '';
       if(/unauthorized-domain/i.test(code)) return 'Este endereço não está autorizado no Firebase. O gerente precisa adicionar "'+location.hostname+'" em Firebase → Authentication → Settings → Authorized domains.';
@@ -297,6 +299,30 @@
           }
           throw e;
         });
+      });
+    }
+    /* ---------- LOGIN ANÔNIMO (sem OAuth, sem Google Cloud) ----------
+       Alternativa para destravar o iOS sem mexer em Cloud Console: usa
+       Firebase Anonymous Authentication. Cada viajante toca o próprio
+       slot (Caio/Amanda/Bruna/Lucas), o app cria um UID anônimo e mapeia
+       pro slot escolhido. Database rules `auth != null` continuam OK.
+       PRÉ-REQUISITO no Firebase Console (1 clique, é grátis):
+         Authentication → Sign-in method → Anonymous → Enable. */
+    function anonSignIn(slot){
+      console.log('[Plotti] anonSignIn slot='+slot);
+      // Setar slot ANTES de signInAnonymously: onAuthStateChanged pode
+      // disparar antes do .then resolver, e assignSlot lê ME_KEY direto.
+      localStorage.setItem(ME_KEY, slot);
+      return loadFirebase().then(function(fb){
+        return fb.a.signInAnonymously(fb.auth).then(function(res){
+          var u=res.user;
+          try{ registerMember(u, slot); }catch(e){}
+          return u;
+        });
+      }).catch(function(e){
+        // Falhou: limpar a marcação de slot pra não fingir login
+        try{ localStorage.removeItem(ME_KEY); }catch(_){}
+        throw e;
       });
     }
     // Identidade GENÉRICA: qualquer conta Google entra. O "lugar" (slot) é
@@ -1419,11 +1445,39 @@
       var sub=w.querySelector('.welcome-sub'); if(sub) sub.textContent='Entre com sua conta Google. O app reconhece quem é você.';
       var box=document.createElement('div');
       box.style.cssText='max-width:520px;margin:22px auto 4px;text-align:center';
+      var SLOT_LABELS={caio:'Caio',amanda:'Amanda',bruna:'Bruna',lucas:'Lucas'};
       box.innerHTML='<button id="cl-welcome-g" class="x2-btn-primary" style="display:inline-flex;align-items:center;justify-content:center;gap:10px;max-width:320px">'+
         '<svg viewBox="0 0 18 18" width="18" height="18"><path fill="#fff" d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.5h4.8a4.1 4.1 0 0 1-1.8 2.7v2.3h2.9c1.7-1.6 2.7-3.9 2.7-6.7z"/><path fill="#fff" d="M9 18c2.4 0 4.5-.8 6-2.2l-2.9-2.3c-.8.6-1.8.9-3.1.9-2.3 0-4.3-1.6-5-3.7H1v2.3A9 9 0 0 0 9 18z"/></svg>'+
         '<span>Entrar com Google</span></button>'+
-        '<div id="cl-welcome-hint" style="font-size:11.5px;color:var(--ink-muted);margin-top:8px"></div>';
+        '<div id="cl-welcome-hint" style="font-size:11.5px;color:var(--ink-muted);margin-top:8px"></div>'+
+        '<div style="margin:22px auto 0;max-width:340px">'+
+          '<div style="display:flex;align-items:center;gap:10px;color:var(--ink-muted,#a89e88);font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:10px"><span style="flex:1;height:1px;background:var(--line,#3a3429)"></span><span>ou direto</span><span style="flex:1;height:1px;background:var(--line,#3a3429)"></span></div>'+
+          '<p style="font-size:12px;color:var(--ink-muted,#a89e88);margin:0 0 10px">Entre sem Google escolhendo seu lugar — funciona em qualquer iPhone, sem OAuth:</p>'+
+          '<div id="cl-welcome-slots" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+            ['caio','amanda','bruna','lucas'].map(function(sl){
+              return '<button class="tl-action" data-anon-slot="'+sl+'" style="justify-content:center">Sou '+SLOT_LABELS[sl]+'</button>';
+            }).join('')+
+          '</div>'+
+          '<div id="cl-welcome-anon-err" style="font-size:12px;color:var(--terra,#C25E3D);margin-top:10px;display:none"></div>'+
+        '</div>';
       head.parentNode.insertBefore(box, head.nextSibling);
+      // Handlers dos slots anônimos
+      box.querySelectorAll('[data-anon-slot]').forEach(function(b){
+        b.onclick=function(){
+          if(!fbCfg()){ var h=$('#cl-welcome-anon-err'); if(h){ h.style.display='block'; h.textContent='Firebase não configurado neste app. Cole o link de convite acima ou peça ao gerente.'; } return; }
+          var slot=b.dataset.anonSlot;
+          var orig=b.textContent; b.textContent='Entrando…'; b.disabled=true;
+          // Desabilita os outros slots durante a tentativa
+          box.querySelectorAll('[data-anon-slot]').forEach(function(x){ if(x!==b) x.disabled=true; });
+          anonSignIn(slot).catch(function(e){
+            console.warn('[Plotti] anonSignIn falhou:', e);
+            var h=$('#cl-welcome-anon-err');
+            var msg=friendlyAuthErr(e) || ('Não consegui entrar: '+(e&&e.message||e));
+            if(h){ h.style.display='block'; h.innerHTML=msg; }
+            try{ b.textContent=orig; b.disabled=false; box.querySelectorAll('[data-anon-slot]').forEach(function(x){ x.disabled=false; }); }catch(_){}
+          });
+        };
+      });
       $('#cl-welcome-g').onclick=function(){
         if(!fbCfg()){
           // Sem Firebase nesta "instância" (PWA tem localStorage separado do

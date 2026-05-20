@@ -1,5 +1,5 @@
-// Plotti Service Worker · v7.2 · GIS inline login iOS (sem popup, sem redirect)
-const VERSION = 'plotti-v7.2';
+// Plotti Service Worker · v7.3 · login anônimo por slot (sem OAuth, sem Cloud Console)
+const VERSION = 'plotti-v7.3';
 const CORE = [
   './',
   './index.html',
