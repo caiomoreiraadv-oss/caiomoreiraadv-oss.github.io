@@ -1434,7 +1434,33 @@
     /* ---------- Welcome: Google em primeiro plano ---------- */
     function enhanceWelcome(){
       var w=$('#welcome'); if(!w||w.hidden) return;
-      if($('#cl-welcome-g')) return;
+      if($('#cl-welcome-g')){
+        // Botão Google e slots já existem — só resetar estado (caso usuário
+        // tenha voltado de uma tela de erro do Google e o botão tenha ficado
+        // travado em "Abrindo Google…").
+        try{
+          var gb=$('#cl-welcome-g');
+          if(gb){
+            // Reseta texto do botão Google se não está logado
+            gb.textContent='Entrar com Google';
+            gb.disabled=false;
+            // Garante o ícone Google
+            if(!gb.querySelector('svg')){
+              gb.innerHTML='<svg viewBox="0 0 18 18" width="18" height="18"><path fill="#fff" d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.5h4.8a4.1 4.1 0 0 1-1.8 2.7v2.3h2.9c1.7-1.6 2.7-3.9 2.7-6.7z"/><path fill="#fff" d="M9 18c2.4 0 4.5-.8 6-2.2l-2.9-2.3c-.8.6-1.8.9-3.1.9-2.3 0-4.3-1.6-5-3.7H1v2.3A9 9 0 0 0 9 18z"/></svg><span>Entrar com Google</span>';
+            }
+          }
+          // Reseta botões de slot anônimo
+          w.querySelectorAll('[data-anon-slot]').forEach(function(b){
+            var slot=b.dataset.anonSlot;
+            var label=({caio:'Caio',amanda:'Amanda',bruna:'Bruna',lucas:'Lucas'})[slot]||slot;
+            b.textContent='Sou '+label;
+            b.disabled=false;
+          });
+          // Limpa erro anônimo
+          var aerr=$('#cl-welcome-anon-err'); if(aerr){ aerr.style.display='none'; aerr.textContent=''; }
+        }catch(e){}
+        return;
+      }
       var head=w.querySelector('.welcome-head');
       if(!head) return;
       // SEMPRE Google: esconde grade de perfis (vazia), "visita" e o botão Google legado.
