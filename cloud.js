@@ -148,15 +148,56 @@
     function captureToken(fb,res){
       try{ if(res){ var c=fb.a.GoogleAuthProvider.credentialFromResult(res); if(c&&c.accessToken) gToken={t:c.accessToken, exp:Date.now()+3300000}; } }catch(e){}
     }
-    function googleSignIn(){
-      return loadFirebase().then(function(fb){
+    // iOS PWA "Adicionado à Tela" não suporta popup (a janela abre e fecha sem
+    // retornar o token). Detecta e força redirect nesse modo. Em iOS Safari
+    // normal o popup funciona, mas o gesto do usuário precisa estar intacto:
+    // por isso o boot pré-aquece o Firebase antes do primeiro clique.
+    function isStandalonePWA(){
+      try{
+        return (window.matchMedia && matchMedia('(display-mode: standalone)').matches)
+            || window.navigator.standalone === true;
+      }catch(e){ return false; }
+    }
+    function isIOS(){ try{ var ua=navigator.userAgent||''; return /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document); }catch(e){ return false; } }
+    function shouldUseRedirect(){ return isIOS() && isStandalonePWA(); }
+    function friendlyAuthErr(e){
+      var code=(e && (e.code||e.message))||'';
+      if(/popup-blocked|popup_blocked/i.test(code)) return 'Seu navegador bloqueou a janela do Google. Tentando outro caminho…';
+      if(/popup-closed-by-user|cancelled-popup-request|popup_closed/i.test(code)) return '';
+      if(/unauthorized-domain/i.test(code)) return 'Este endereço não está autorizado no Firebase. O gerente precisa adicionar "'+location.hostname+'" em Firebase → Authentication → Settings → Authorized domains.';
+      if(/operation-not-supported-in-this-environment|web-storage-unsupported/i.test(code)) return 'Login indisponível neste modo. Abra o Plotti pelo Safari (não pelo ícone instalado) para entrar a primeira vez.';
+      if(/network-request-failed/i.test(code)) return 'Sem internet — verifique a conexão e tente de novo.';
+      if(/too-many-requests/i.test(code)) return 'Muitas tentativas — espere alguns minutos antes de tentar de novo.';
+      if(/invalid-api-key|configuration-not-found/i.test(code)) return 'Config do Firebase inválida. O gerente precisa revisar a config em Mais → Nuvem & Login.';
+      return 'Erro no login Google: '+(e && (e.message||e.code) || 'desconhecido');
+    }
+    // Pré-aquece Firebase: imports dinâmicos demoram ~500ms-2s. Se o usuário
+    // toca em "Entrar com Google" antes disso, o popup quebra (gesto perdido).
+    var fbPrewarm=null;
+    function prewarmFirebase(){ if(!fbPrewarm) fbPrewarm=loadFirebase().catch(function(){}); return fbPrewarm; }
+    function googleSignIn(opts){
+      opts=opts||{};
+      var useRedirect=opts.forceRedirect || shouldUseRedirect();
+      // Se Firebase já está carregado (FB!=null), o caminho é síncrono no clique.
+      // Se ainda não, retorna a promise — mas o boot deve ter pré-aquecido para
+      // que este caso seja raro.
+      var p = FB ? Promise.resolve(FB) : loadFirebase();
+      return p.then(function(fb){
         var prov=new fb.a.GoogleAuthProvider();
         prov.addScope('https://www.googleapis.com/auth/calendar.events');
-        prov.setCustomParameters({ prompt:'select_account' });
-                // POPUP: signInWithRedirect quebra em GitHub Pages devido a Storage
-        // Partitioning do Chrome (iframe oculto fica sem acesso ao
-        // sessionStorage do firebaseapp.com). Popup contorna o problema.
-                return fb.a.signInWithPopup(fb.auth, prov).then(function(res){ captureToken(fb,res); });
+        // prompt:'select_account' obrigava a tela de escolha toda vez. Removido
+        // — o Google decide (em re-login, vai direto).
+        if(useRedirect){
+          return fb.a.signInWithRedirect(fb.auth, prov);
+        }
+        return fb.a.signInWithPopup(fb.auth, prov).then(function(res){ captureToken(fb,res); }).catch(function(e){
+          var c=(e&&e.code)||'';
+          // Popup falhou por ambiente (bloqueado / não suportado): cai para redirect.
+          if(/popup-blocked|operation-not-supported-in-this-environment|web-storage-unsupported/i.test(c)){
+            return fb.a.signInWithRedirect(fb.auth, prov);
+          }
+          throw e;
+        });
       });
     }
     // Identidade GENÉRICA: qualquer conta Google entra. O "lugar" (slot) é
@@ -205,8 +246,13 @@
     }
     function checkRedirect(){
       loadFirebase().then(function(fb){
-        fb.a.getRedirectResult(fb.auth).then(function(res){ captureToken(fb,res); bindAuthState(); }).catch(function(){ bindAuthState(); });
-      }).catch(function(){});
+        // bindAuthState SEMPRE precisa rodar — getRedirectResult pode falhar
+        // por motivos benignos (sem redirect pendente, storage particionado).
+        function bind(){ try{ bindAuthState(); }catch(e){} }
+        try{
+          fb.a.getRedirectResult(fb.auth).then(function(res){ captureToken(fb,res); bind(); }).catch(bind);
+        }catch(e){ bind(); }
+      }).catch(function(e){ console.warn('[PT-2026] Firebase falhou ao carregar:', e&&e.message||e); });
     }
     /* ---------- pós-login: tela única de consentimento ---------- */
     var CONSENT_KEY='pt2026:fb:consent', GCAL_DONE='pt2026:fb:gcal';
@@ -834,7 +880,14 @@
         loadFirebase().then(function(){ checkRedirect(); scrNuvem(); }).catch(function(e){ alert('Falha ao carregar Firebase: '+(e.message||e)); });
       };
       var hp=$('#fb-help'); if(hp) hp.onclick=function(){ fbHelpModal(); };
-      var lg=$('#fb-login'); if(lg) lg.onclick=function(){ lg.textContent='Abrindo Google…'; googleSignIn().then(function(){ }).catch(function(e){ alert('Erro no login: '+(e&&e.message||e)); scrNuvem(); }); };
+      var lg=$('#fb-login'); if(lg) lg.onclick=function(){
+        lg.textContent='Abrindo Google…'; lg.disabled=true;
+        googleSignIn().then(function(){ /* popup: sucesso já trata via onAuthStateChanged. redirect: a página vai recarregar. */ }).catch(function(e){
+          var msg=friendlyAuthErr(e); if(msg) alert(msg);
+          try{ lg.disabled=false; }catch(_){}
+          scrNuvem();
+        });
+      };
       var ot=$('#fb-out'); if(ot) ot.onclick=function(){ if(FB) FB.a.signOut(FB.auth).then(function(){ stopShareLocation(); toast('Saiu'); scrNuvem(); }); };
       var cl=$('#fb-clear'); if(cl) cl.onclick=function(){ if(confirm('Remover Firebase e voltar ao modo nativo?')){ localStorage.removeItem(FB_KEY); localStorage.removeItem(ME_KEY); FB=null; toast('Voltou ao nativo'); scrNuvem(); } };
       var rz=$('#cl-reset-trip'); if(rz) rz.onclick=function(){
@@ -1222,8 +1275,11 @@
           }
           return;
         }
-        var _gb=this; _gb.textContent='Abrindo Google…';
-        googleSignIn().catch(function(e){ try{ _gb.textContent='Entrar com Google'; }catch(_){} alert('Não consegui abrir o login Google: '+(e&&e.message||e)+'\nTente de novo — e libere popups para este site.'); });
+        var _gb=this; _gb.textContent='Abrindo Google…'; _gb.disabled=true;
+        googleSignIn().catch(function(e){
+          try{ _gb.textContent='Entrar com Google'; _gb.disabled=false; }catch(_){}
+          var msg=friendlyAuthErr(e); if(msg) alert(msg);
+        });
       };
     }
     var origRW=G.renderWelcome;
@@ -1525,11 +1581,17 @@
     }catch(e){}
     /* ---------- arranque ---------- */
     acceptInvite(); // link de convite traz a config; salva e segue para o login
-    if(fbCfg()){ checkRedirect(); }
+    if(fbCfg()){
+      // Pré-aquece os imports do Firebase ANTES do usuário tocar em "Entrar
+      // com Google" — sem isso o popup quebra (gesto do clique perdido durante
+      // os ~500ms-2s dos dynamic imports).
+      prewarmFirebase();
+      checkRedirect();
+    }
     try{
       var cur=document.querySelector('.view.active');
       if(cur&&cur.dataset.view==='mais') G.renderMais();
     }catch(e){}
-    console.log('[PT-2026] cloud.js v3.1 — '+(fbCfg()?'Firebase configurado':'modo nativo')+' · integrações ativas');
+    console.log('[Plotti] cloud.js v3.2 — '+(fbCfg()?'Firebase configurado':'modo nativo')+(shouldUseRedirect()?' · login via redirect (PWA iOS)':' · login via popup')+' · integrações ativas');
   }
 })();
