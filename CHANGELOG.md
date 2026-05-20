@@ -1,5 +1,11 @@
 # PT-2026 · Changelog
 
+## v7.0 · 20 maio 2026 · iOS sempre redirect + cola link de convite no PWA
+
+- **Botão "Entrar com Google" preso em "Abrindo Google…" no Safari iOS** — agora corrigido. iOS Safari abre o popup como nova aba e o `signInWithPopup` nunca resolve (iframe handler bloqueado pelo ITP do Safari). `shouldUseRedirect()` agora retorna `true` para TODO iOS (Safari + PWA), não só PWA — usa `signInWithRedirect`, que navega a página inteira e funciona.
+- **PWA "ainda não foi configurado" (iPhone)** — antes era dead-end: o app instalado tem `localStorage` separado do Safari (regra da Apple), então a config do Firebase feita no Safari não chega ao PWA. Agora, quando sem config, o welcome mostra um campo "**cole aqui o link de convite**" — o gerente gera o link no Safari (Mais → Nuvem & Login → Copiar link), cola no PWA, e a config + login Google fluem na hora.
+- SW bumpado v6.9 → v7.0 (invalidar cache).
+
 ## v6.9 · 20 maio 2026 · Login Google robusto (corrige popup bloqueado / PWA iOS)
 
 - **Causa raiz:** `signInWithPopup` rodava DEPOIS dos `import()` dinâmicos do Firebase. Esses imports demoram 500ms-2s na primeira visita — tempo suficiente para o navegador "esquecer" que o usuário clicou. Resultado: popup bloqueado silenciosamente, o botão "Entrar com Google" não fazia nada.

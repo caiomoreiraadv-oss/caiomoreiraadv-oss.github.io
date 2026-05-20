@@ -1,5 +1,5 @@
-// Plotti Service Worker · v6.9 · login robusto (pré-aquece Firebase, fallback redirect)
-const VERSION = 'plotti-v6.9';
+// Plotti Service Worker · v7.0 · iOS sempre redirect + cola link de convite no PWA
+const VERSION = 'plotti-v7.0';
 const CORE = [
   './',
   './index.html',

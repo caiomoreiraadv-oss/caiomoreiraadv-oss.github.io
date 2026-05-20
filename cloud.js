@@ -159,7 +159,11 @@
       }catch(e){ return false; }
     }
     function isIOS(){ try{ var ua=navigator.userAgent||''; return /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document); }catch(e){ return false; } }
-    function shouldUseRedirect(){ return isIOS() && isStandalonePWA(); }
+    // iOS é hostil a popup-based auth: Safari abre o popup como nova aba e o
+    // signInWithPopup pendura para sempre (iframe de handler bloqueado por ITP).
+    // PWA standalone idem. Para TODO iOS, usar redirect — é o caminho que o
+    // Firebase recomenda em iOS e que efetivamente funciona.
+    function shouldUseRedirect(){ return isIOS(); }
     function friendlyAuthErr(e){
       var code=(e && (e.code||e.message))||'';
       if(/popup-blocked|popup_blocked/i.test(code)) return 'Seu navegador bloqueou a janela do Google. Tentando outro caminho…';
@@ -1257,25 +1261,47 @@
       head.parentNode.insertBefore(box, head.nextSibling);
       $('#cl-welcome-g').onclick=function(){
         if(!fbCfg()){
-          // Sem Firebase: mostrar mensagem inline (não pop-up dead-end) com 2 caminhos:
-          // pedir o link de convite ao gerente, ou abrir as instruções de setup.
+          // Sem Firebase nesta "instância" (PWA tem localStorage separado do
+          // Safari no iPhone — quem configurou no Safari não tem config aqui).
+          // 3 caminhos: colar link de convite, configurar do zero, ou abrir
+          // pelo Safari.
           var hint=$('#cl-welcome-hint');
           if(hint){
-            hint.innerHTML='Este Plotti ainda não foi configurado. '+
-              '<strong>Peça o link de convite</strong> a quem criou a viagem &mdash; '+
-              'ao abrir o convite, o login Google passa a funcionar.<br>'+
-              '<a href="#" id="cl-welcome-setup" style="color:var(--olive);font-weight:600;text-decoration:underline">Sou o gerente · configurar agora</a>';
+            var pwaNote = isStandalonePWA()
+              ? '<p style="margin:0 0 10px;font-size:12px;color:var(--ink-muted)">No iPhone, o app instalado tem mem&oacute;ria separada do Safari &mdash; se voc&ecirc; j&aacute; configurou no Safari, cole abaixo o link de convite (gerado l&aacute; em Mais &rarr; Nuvem &amp; Login &rarr; <strong>Copiar link</strong>).</p>'
+              : '<p style="margin:0 0 10px;font-size:12px;color:var(--ink-muted)">Pe&ccedil;a o link de convite a quem criou a viagem &mdash; ao abrir o convite, o login Google passa a funcionar.</p>';
+            hint.innerHTML = pwaNote +
+              '<input id="cl-welcome-invite" type="text" placeholder="cole aqui o link de convite (https://...#join=...)" style="width:100%;max-width:420px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:12px;margin-bottom:8px">'+
+              '<button id="cl-welcome-apply" class="x2-btn-primary" style="max-width:200px;margin:0 auto 14px;display:block">Aplicar link e entrar</button>'+
+              '<a href="#" id="cl-welcome-setup" style="color:var(--olive);font-weight:600;text-decoration:underline;font-size:13px">Sou o gerente &middot; configurar do zero</a>';
             hint.style.fontSize='13px';
             hint.style.color='var(--ink-soft)';
             hint.style.marginTop='14px';
             hint.style.lineHeight='1.5';
+            hint.style.textAlign='center';
             var s=$('#cl-welcome-setup'); if(s) s.onclick=function(ev){ ev.preventDefault();
               try{ state.maisSub='nuvem'; saveState(); G.goTo&&G.goTo('mais'); }catch(_){}
+            };
+            var ap=$('#cl-welcome-apply'); if(ap) ap.onclick=function(){
+              var raw=(($('#cl-welcome-invite')||{}).value||'').trim();
+              var m=/[#&?]join=([^&\s]+)/.exec(raw) || (raw.length>40 ? [null, raw] : null);
+              if(!m){ alert('Cole o link inteiro de convite (deve conter "#join=...").'); return; }
+              try{
+                var data=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));
+                if(!data || !data.fb || !data.fb.apiKey || !data.fb.projectId){ alert('Link de convite invalido ou incompleto.'); return; }
+                setFbCfg(data.fb);
+                toast('Configura&ccedil;&atilde;o aplicada');
+                ap.disabled=true; ap.textContent='Carregando Firebase&hellip;';
+                prewarmFirebase().then(function(){ checkRedirect(); googleSignIn().catch(function(e){ var msg=friendlyAuthErr(e); if(msg) alert(msg); }); });
+              }catch(e){ alert('Nao consegui ler o link: '+(e.message||e)); }
             };
           }
           return;
         }
         var _gb=this; _gb.textContent='Abrindo Google…'; _gb.disabled=true;
+        // Em iOS o caminho é redirect (signInWithRedirect navega a página
+        // inteira — não há "abertura" a esperar). O texto "Abrindo Google…"
+        // some quando a página recarrega no Google.
         googleSignIn().catch(function(e){
           try{ _gb.textContent='Entrar com Google'; _gb.disabled=false; }catch(_){}
           var msg=friendlyAuthErr(e); if(msg) alert(msg);
