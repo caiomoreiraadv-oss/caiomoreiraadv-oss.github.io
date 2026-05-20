@@ -1,5 +1,5 @@
-// Plotti Service Worker · v7.5 · código técnico do Firebase exposto em tela
-const VERSION = 'plotti-v7.5';
+// Plotti Service Worker · v7.6 · Firebase config embutida (sem link de convite)
+const VERSION = 'plotti-v7.6';
 const CORE = [
   './',
   './index.html',

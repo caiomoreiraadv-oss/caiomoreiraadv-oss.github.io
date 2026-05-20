@@ -98,9 +98,11 @@
     /* ---------- config Firebase ---------- */
     var FB_KEY='pt2026:fb:cfg', ME_KEY='pt2026:fb:me', SHARE_KEY='pt2026:fb:share';
     var GIS_KEY='pt2026:google:clientid'; // Web Client ID p/ Google Identity Services (login iOS-friendly)
-    function fbCfg(){ try{ return JSON.parse(localStorage.getItem(FB_KEY)||'null'); }catch(e){ return null; } }
+    var FB_EMBEDDED_CFG={apiKey:'AIzaSyCe0VtVWULZO0zCI6lY-Fk70YxQfC0_Kg4',authDomain:'pt-2026.firebaseapp.com',databaseURL:'https://pt-2026-default-rtdb.europe-west1.firebasedatabase.app',projectId:'pt-2026',storageBucket:'pt-2026.firebasestorage.app',messagingSenderId:'738354763535',appId:'1:738354763535:web:0910f533b157b7c0a7107a'};
+    function fbCfg(){ try{ var stored=JSON.parse(localStorage.getItem(FB_KEY)||'null'); if(stored&&stored.apiKey&&stored.projectId) return stored; }catch(e){} return FB_EMBEDDED_CFG; }
     function setFbCfg(o){ localStorage.setItem(FB_KEY, JSON.stringify(o)); }
-    function gisClientId(){ try{ return localStorage.getItem(GIS_KEY)||''; }catch(e){ return ''; } }
+    var GIS_EMBEDDED_CLIENT_ID='';
+    function gisClientId(){ try{ var s=localStorage.getItem(GIS_KEY)||''; if(s) return s; }catch(e){} return GIS_EMBEDDED_CLIENT_ID||''; }
     function setGisClientId(v){ try{ if(v) localStorage.setItem(GIS_KEY,v); else localStorage.removeItem(GIS_KEY); }catch(e){} }
     var FB=null, fbReady=false, fbErr=null;
     function buildInvite(){
