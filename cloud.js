@@ -152,11 +152,10 @@
         var prov=new fb.a.GoogleAuthProvider();
         prov.addScope('https://www.googleapis.com/auth/calendar.events');
         prov.setCustomParameters({ prompt:'select_account' });
-        // REDIRECT SEMPRE. O popup é bloqueado por padrão no Chrome desktop e
-        // deixava o login preso em "Abrindo Google…". Redirect funciona em
-        // qualquer ambiente: a página vai ao Google e volta; o login é
-        // finalizado em checkRedirect()→getRedirectResult() no arranque.
-        return fb.a.signInWithRedirect(fb.auth, prov);
+                // POPUP: signInWithRedirect quebra em GitHub Pages devido a Storage
+        // Partitioning do Chrome (iframe oculto fica sem acesso ao
+        // sessionStorage do firebaseapp.com). Popup contorna o problema.
+                return fb.a.signInWithPopup(fb.auth, prov).then(function(res){ captureToken(fb,res); });
       });
     }
     // Identidade GENÉRICA: qualquer conta Google entra. O "lugar" (slot) é
