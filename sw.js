@@ -1,5 +1,5 @@
-// Plotti Service Worker · v7.0 · iOS sempre redirect + cola link de convite no PWA
-const VERSION = 'plotti-v7.0';
+// Plotti Service Worker · v7.1 · overlay "finalizando login" + diagnóstico no console
+const VERSION = 'plotti-v7.1';
 const CORE = [
   './',
   './index.html',

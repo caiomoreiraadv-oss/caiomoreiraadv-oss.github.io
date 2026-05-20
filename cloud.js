@@ -182,22 +182,24 @@
     function googleSignIn(opts){
       opts=opts||{};
       var useRedirect=opts.forceRedirect || shouldUseRedirect();
+      console.log('[Plotti] googleSignIn: useRedirect='+useRedirect+' FB='+!!FB);
       // Se Firebase já está carregado (FB!=null), o caminho é síncrono no clique.
-      // Se ainda não, retorna a promise — mas o boot deve ter pré-aquecido para
-      // que este caso seja raro.
       var p = FB ? Promise.resolve(FB) : loadFirebase();
       return p.then(function(fb){
         var prov=new fb.a.GoogleAuthProvider();
         prov.addScope('https://www.googleapis.com/auth/calendar.events');
-        // prompt:'select_account' obrigava a tela de escolha toda vez. Removido
-        // — o Google decide (em re-login, vai direto).
         if(useRedirect){
+          console.log('[Plotti] signInWithRedirect…');
+          try{ sessionStorage.setItem(AUTH_PENDING_KEY,'1'); }catch(e){}
           return fb.a.signInWithRedirect(fb.auth, prov);
         }
+        console.log('[Plotti] signInWithPopup…');
         return fb.a.signInWithPopup(fb.auth, prov).then(function(res){ captureToken(fb,res); }).catch(function(e){
           var c=(e&&e.code)||'';
           // Popup falhou por ambiente (bloqueado / não suportado): cai para redirect.
           if(/popup-blocked|operation-not-supported-in-this-environment|web-storage-unsupported/i.test(c)){
+            console.warn('[Plotti] popup falhou ('+c+') — caindo para redirect');
+            try{ sessionStorage.setItem(AUTH_PENDING_KEY,'1'); }catch(e){}
             return fb.a.signInWithRedirect(fb.auth, prov);
           }
           throw e;
@@ -232,14 +234,18 @@
     function bindAuthState(){
       if(!FB || authBound) return;
       authBound=true;
+      console.log('[Plotti] bindAuthState: onAuthStateChanged registrado');
       FB.a.onAuthStateChanged(FB.auth, function(u){
-        if(!u) return;
+        console.log('[Plotti] onAuthStateChanged:', u ? ('logado='+u.email) : 'deslogado');
+        if(!u){ hideAuthPending(); return; }
         var gp={ email:u.email, name:u.displayName, picture:u.photoURL, sub:u.uid };
         function go(pid){
+          console.log('[Plotti] assignSlot → '+pid);
           localStorage.setItem(ME_KEY, pid);
           try{ G.saveGoogleProfileFor && G.saveGoogleProfileFor(pid, gp); }catch(e){}
           try{ G.setActiveProfile(pid); }catch(e){}
           try{ G.updateProfileAvatar&&G.updateProfileAvatar(); }catch(e){}
+          hideAuthPending();
           startSync();
           afterLogin();
           var cur=document.querySelector('.view.active');
@@ -248,15 +254,58 @@
         assignSlot(u, go); // identidade pela conta Google; lugar auto-atribuído
       });
     }
+    // Overlay "Finalizando login…" enquanto getRedirectResult não retorna.
+    // Necessário: depois do redirect Google→Firebase→app, o welcome reaparece
+    // por ~1-3s até o auth state se acertar. O usuário acha que falhou.
+    var AUTH_PENDING_KEY='pt2026:fb:authpending';
+    function showAuthPending(){
+      if(document.getElementById('cl-auth-pending')) return;
+      var o=document.createElement('div'); o.id='cl-auth-pending';
+      o.style.cssText='position:fixed;inset:0;background:var(--bg,#1a1714);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--ink,#f4ead8)';
+      o.innerHTML=
+        '<div style="font-family:Fraunces,serif;font-size:24px;margin-bottom:8px">Finalizando login…</div>'+
+        '<div style="font-size:13px;color:var(--ink-muted,#a89e88);margin-bottom:24px">Voltando do Google. Não feche o app.</div>'+
+        '<div style="display:flex;gap:7px"><span class="cl-dot"></span><span class="cl-dot" style="animation-delay:.18s"></span><span class="cl-dot" style="animation-delay:.36s"></span></div>'+
+        '<style>.cl-dot{width:9px;height:9px;border-radius:50%;background:var(--olive,#5E7355);display:inline-block;animation:clpulse 1.1s infinite ease-in-out}@keyframes clpulse{0%,80%,100%{opacity:.25;transform:scale(.85)}40%{opacity:1;transform:scale(1)}}</style>'+
+        '<button id="cl-auth-cancel" style="margin-top:36px;background:none;border:none;color:var(--ink-muted,#a89e88);text-decoration:underline;font-size:12px;cursor:pointer">Cancelar e voltar</button>';
+      document.body.appendChild(o);
+      document.getElementById('cl-auth-cancel').onclick=function(){ hideAuthPending(true); };
+    }
+    function hideAuthPending(force){
+      try{ sessionStorage.removeItem(AUTH_PENDING_KEY); }catch(e){}
+      var el=document.getElementById('cl-auth-pending'); if(el) el.remove();
+    }
     function checkRedirect(){
+      var pending=false; try{ pending=sessionStorage.getItem(AUTH_PENDING_KEY)==='1'; }catch(e){}
+      console.log('[Plotti] checkRedirect: pending='+pending);
+      if(pending){ showAuthPending(); setTimeout(function(){ hideAuthPending(); }, 9000); }
       loadFirebase().then(function(fb){
         // bindAuthState SEMPRE precisa rodar — getRedirectResult pode falhar
         // por motivos benignos (sem redirect pendente, storage particionado).
-        function bind(){ try{ bindAuthState(); }catch(e){} }
+        function bind(){ try{ bindAuthState(); }catch(e){ console.warn('[Plotti] bindAuthState erro:', e); } hideAuthPending(); }
         try{
-          fb.a.getRedirectResult(fb.auth).then(function(res){ captureToken(fb,res); bind(); }).catch(bind);
-        }catch(e){ bind(); }
-      }).catch(function(e){ console.warn('[PT-2026] Firebase falhou ao carregar:', e&&e.message||e); });
+          fb.a.getRedirectResult(fb.auth).then(function(res){
+            console.log('[Plotti] getRedirectResult:', res && res.user ? 'user='+res.user.email : 'sem resultado pendente');
+            captureToken(fb,res); bind();
+            // Se voltou de redirect e currentUser AINDA é null após o get, é
+            // sinal de que o storage cross-origin foi particionado pelo Safari.
+            if(pending && !res && fb.auth && !fb.auth.currentUser){
+              setTimeout(function(){
+                if(!fb.auth.currentUser){
+                  hideAuthPending();
+                  alert('O Safari bloqueou o retorno do login (proteção ITP). Para entrar no iPhone:\n\n1) Abra o app pelo Safari (não pelo ícone instalado)\n2) Toque em Entrar com Google\n3) Quando voltar, vá em Mais → Nuvem & Login → Copiar link de convite\n4) Abra o app instalado e cole o link no campo "cole aqui o link de convite"');
+                }
+              }, 2500);
+            }
+          }).catch(function(e){
+            console.warn('[Plotti] getRedirectResult erro:', e && (e.code||e.message)||e);
+            bind();
+          });
+        }catch(e){ console.warn('[Plotti] getRedirectResult lançou:', e); bind(); }
+      }).catch(function(e){
+        console.warn('[Plotti] Firebase falhou ao carregar:', e && e.message||e);
+        hideAuthPending();
+      });
     }
     /* ---------- pós-login: tela única de consentimento ---------- */
     var CONSENT_KEY='pt2026:fb:consent', GCAL_DONE='pt2026:fb:gcal';
