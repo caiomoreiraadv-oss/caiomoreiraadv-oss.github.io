@@ -1,5 +1,5 @@
-// Plotti Service Worker · v7.3 · login anônimo por slot (sem OAuth, sem Cloud Console)
-const VERSION = 'plotti-v7.3';
+// Plotti Service Worker · v7.4 · reset estado dos botões do welcome ao re-render
+const VERSION = 'plotti-v7.4';
 const CORE = [
   './',
   './index.html',
