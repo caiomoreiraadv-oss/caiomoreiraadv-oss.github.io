@@ -1,5 +1,26 @@
 # PT-2026 · Changelog
 
+## v7.0 · 20 maio 2026 · iOS sempre redirect + cola link de convite no PWA
+
+- **Botão "Entrar com Google" preso em "Abrindo Google…" no Safari iOS** — agora corrigido. iOS Safari abre o popup como nova aba e o `signInWithPopup` nunca resolve (iframe handler bloqueado pelo ITP do Safari). `shouldUseRedirect()` agora retorna `true` para TODO iOS (Safari + PWA), não só PWA — usa `signInWithRedirect`, que navega a página inteira e funciona.
+- **PWA "ainda não foi configurado" (iPhone)** — antes era dead-end: o app instalado tem `localStorage` separado do Safari (regra da Apple), então a config do Firebase feita no Safari não chega ao PWA. Agora, quando sem config, o welcome mostra um campo "**cole aqui o link de convite**" — o gerente gera o link no Safari (Mais → Nuvem & Login → Copiar link), cola no PWA, e a config + login Google fluem na hora.
+- SW bumpado v6.9 → v7.0 (invalidar cache).
+
+## v6.9 · 20 maio 2026 · Login Google robusto (corrige popup bloqueado / PWA iOS)
+
+- **Causa raiz:** `signInWithPopup` rodava DEPOIS dos `import()` dinâmicos do Firebase. Esses imports demoram 500ms-2s na primeira visita — tempo suficiente para o navegador "esquecer" que o usuário clicou. Resultado: popup bloqueado silenciosamente, o botão "Entrar com Google" não fazia nada.
+- **Pré-aquecimento:** Firebase agora é carregado no boot (junto com `checkRedirect`) sempre que há config. Quando o usuário toca em "Entrar com Google", o popup abre **síncrono** dentro do gesto do clique — fim do bloqueio.
+- **PWA iOS (ícone na tela inicial):** detecta `display-mode: standalone` no iPhone e usa `signInWithRedirect` direto. Popup-based auth simplesmente não funciona em PWA standalone do Safari — agora o fluxo é redirect, igual ao iOS Safari aceita.
+- **Fallback automático popup → redirect:** se o popup ainda assim falhar (`popup-blocked`, `operation-not-supported-in-this-environment`, `web-storage-unsupported`), o app cai para redirect sem o usuário precisar tocar de novo.
+- **Mensagens de erro úteis** (`friendlyAuthErr`): em vez de `FirebaseError: auth/...`, agora aparece em PT-BR explicando o que houve e o que fazer:
+  - `unauthorized-domain` → "adicione esse endereço em Firebase → Authentication → Settings → Authorized domains".
+  - `network-request-failed` → "sem internet, verifique a conexão".
+  - `too-many-requests` → "espere alguns minutos".
+  - `popup-closed-by-user` / `cancelled-popup-request` → silencioso (foi o usuário que fechou).
+- **`bindAuthState` resiliente:** roda mesmo quando `getRedirectResult` lança (ex.: storage particionado em incognito).
+- **Removido `prompt:'select_account'`:** obrigava a tela de escolha de conta toda vez. Agora re-login vai direto.
+- SW bumpado para v6.9 (invalidar `cloud.js` cacheado).
+
 ## v6.7 · 19 maio 2026 · Welcome zerado + sempre Google (Etapa 1.b)
 
 - **Subtítulo "Portugal · 22–29 maio 2026" removido** do welcome → "PLOTTI · VIAGEM EM GRUPO".

@@ -1,5 +1,5 @@
-// Plotti Service Worker · v6.8 · network-first p/ HTML+JS (fim do cache preso)
-const VERSION = 'plotti-v6.8';
+// Plotti Service Worker · v7.0 · iOS sempre redirect + cola link de convite no PWA
+const VERSION = 'plotti-v7.0';
 const CORE = [
   './',
   './index.html',

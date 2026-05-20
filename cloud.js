@@ -148,15 +148,60 @@
     function captureToken(fb,res){
       try{ if(res){ var c=fb.a.GoogleAuthProvider.credentialFromResult(res); if(c&&c.accessToken) gToken={t:c.accessToken, exp:Date.now()+3300000}; } }catch(e){}
     }
-    function googleSignIn(){
-      return loadFirebase().then(function(fb){
+    // iOS PWA "Adicionado à Tela" não suporta popup (a janela abre e fecha sem
+    // retornar o token). Detecta e força redirect nesse modo. Em iOS Safari
+    // normal o popup funciona, mas o gesto do usuário precisa estar intacto:
+    // por isso o boot pré-aquece o Firebase antes do primeiro clique.
+    function isStandalonePWA(){
+      try{
+        return (window.matchMedia && matchMedia('(display-mode: standalone)').matches)
+            || window.navigator.standalone === true;
+      }catch(e){ return false; }
+    }
+    function isIOS(){ try{ var ua=navigator.userAgent||''; return /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document); }catch(e){ return false; } }
+    // iOS é hostil a popup-based auth: Safari abre o popup como nova aba e o
+    // signInWithPopup pendura para sempre (iframe de handler bloqueado por ITP).
+    // PWA standalone idem. Para TODO iOS, usar redirect — é o caminho que o
+    // Firebase recomenda em iOS e que efetivamente funciona.
+    function shouldUseRedirect(){ return isIOS(); }
+    function friendlyAuthErr(e){
+      var code=(e && (e.code||e.message))||'';
+      if(/popup-blocked|popup_blocked/i.test(code)) return 'Seu navegador bloqueou a janela do Google. Tentando outro caminho…';
+      if(/popup-closed-by-user|cancelled-popup-request|popup_closed/i.test(code)) return '';
+      if(/unauthorized-domain/i.test(code)) return 'Este endereço não está autorizado no Firebase. O gerente precisa adicionar "'+location.hostname+'" em Firebase → Authentication → Settings → Authorized domains.';
+      if(/operation-not-supported-in-this-environment|web-storage-unsupported/i.test(code)) return 'Login indisponível neste modo. Abra o Plotti pelo Safari (não pelo ícone instalado) para entrar a primeira vez.';
+      if(/network-request-failed/i.test(code)) return 'Sem internet — verifique a conexão e tente de novo.';
+      if(/too-many-requests/i.test(code)) return 'Muitas tentativas — espere alguns minutos antes de tentar de novo.';
+      if(/invalid-api-key|configuration-not-found/i.test(code)) return 'Config do Firebase inválida. O gerente precisa revisar a config em Mais → Nuvem & Login.';
+      return 'Erro no login Google: '+(e && (e.message||e.code) || 'desconhecido');
+    }
+    // Pré-aquece Firebase: imports dinâmicos demoram ~500ms-2s. Se o usuário
+    // toca em "Entrar com Google" antes disso, o popup quebra (gesto perdido).
+    var fbPrewarm=null;
+    function prewarmFirebase(){ if(!fbPrewarm) fbPrewarm=loadFirebase().catch(function(){}); return fbPrewarm; }
+    function googleSignIn(opts){
+      opts=opts||{};
+      var useRedirect=opts.forceRedirect || shouldUseRedirect();
+      // Se Firebase já está carregado (FB!=null), o caminho é síncrono no clique.
+      // Se ainda não, retorna a promise — mas o boot deve ter pré-aquecido para
+      // que este caso seja raro.
+      var p = FB ? Promise.resolve(FB) : loadFirebase();
+      return p.then(function(fb){
         var prov=new fb.a.GoogleAuthProvider();
         prov.addScope('https://www.googleapis.com/auth/calendar.events');
-        prov.setCustomParameters({ prompt:'select_account' });
-                // POPUP: signInWithRedirect quebra em GitHub Pages devido a Storage
-        // Partitioning do Chrome (iframe oculto fica sem acesso ao
-        // sessionStorage do firebaseapp.com). Popup contorna o problema.
-                return fb.a.signInWithPopup(fb.auth, prov).then(function(res){ captureToken(fb,res); });
+        // prompt:'select_account' obrigava a tela de escolha toda vez. Removido
+        // — o Google decide (em re-login, vai direto).
+        if(useRedirect){
+          return fb.a.signInWithRedirect(fb.auth, prov);
+        }
+        return fb.a.signInWithPopup(fb.auth, prov).then(function(res){ captureToken(fb,res); }).catch(function(e){
+          var c=(e&&e.code)||'';
+          // Popup falhou por ambiente (bloqueado / não suportado): cai para redirect.
+          if(/popup-blocked|operation-not-supported-in-this-environment|web-storage-unsupported/i.test(c)){
+            return fb.a.signInWithRedirect(fb.auth, prov);
+          }
+          throw e;
+        });
       });
     }
     // Identidade GENÉRICA: qualquer conta Google entra. O "lugar" (slot) é
@@ -205,8 +250,13 @@
     }
     function checkRedirect(){
       loadFirebase().then(function(fb){
-        fb.a.getRedirectResult(fb.auth).then(function(res){ captureToken(fb,res); bindAuthState(); }).catch(function(){ bindAuthState(); });
-      }).catch(function(){});
+        // bindAuthState SEMPRE precisa rodar — getRedirectResult pode falhar
+        // por motivos benignos (sem redirect pendente, storage particionado).
+        function bind(){ try{ bindAuthState(); }catch(e){} }
+        try{
+          fb.a.getRedirectResult(fb.auth).then(function(res){ captureToken(fb,res); bind(); }).catch(bind);
+        }catch(e){ bind(); }
+      }).catch(function(e){ console.warn('[PT-2026] Firebase falhou ao carregar:', e&&e.message||e); });
     }
     /* ---------- pós-login: tela única de consentimento ---------- */
     var CONSENT_KEY='pt2026:fb:consent', GCAL_DONE='pt2026:fb:gcal';
@@ -834,7 +884,14 @@
         loadFirebase().then(function(){ checkRedirect(); scrNuvem(); }).catch(function(e){ alert('Falha ao carregar Firebase: '+(e.message||e)); });
       };
       var hp=$('#fb-help'); if(hp) hp.onclick=function(){ fbHelpModal(); };
-      var lg=$('#fb-login'); if(lg) lg.onclick=function(){ lg.textContent='Abrindo Google…'; googleSignIn().then(function(){ }).catch(function(e){ alert('Erro no login: '+(e&&e.message||e)); scrNuvem(); }); };
+      var lg=$('#fb-login'); if(lg) lg.onclick=function(){
+        lg.textContent='Abrindo Google…'; lg.disabled=true;
+        googleSignIn().then(function(){ /* popup: sucesso já trata via onAuthStateChanged. redirect: a página vai recarregar. */ }).catch(function(e){
+          var msg=friendlyAuthErr(e); if(msg) alert(msg);
+          try{ lg.disabled=false; }catch(_){}
+          scrNuvem();
+        });
+      };
       var ot=$('#fb-out'); if(ot) ot.onclick=function(){ if(FB) FB.a.signOut(FB.auth).then(function(){ stopShareLocation(); toast('Saiu'); scrNuvem(); }); };
       var cl=$('#fb-clear'); if(cl) cl.onclick=function(){ if(confirm('Remover Firebase e voltar ao modo nativo?')){ localStorage.removeItem(FB_KEY); localStorage.removeItem(ME_KEY); FB=null; toast('Voltou ao nativo'); scrNuvem(); } };
       var rz=$('#cl-reset-trip'); if(rz) rz.onclick=function(){
@@ -1204,26 +1261,51 @@
       head.parentNode.insertBefore(box, head.nextSibling);
       $('#cl-welcome-g').onclick=function(){
         if(!fbCfg()){
-          // Sem Firebase: mostrar mensagem inline (não pop-up dead-end) com 2 caminhos:
-          // pedir o link de convite ao gerente, ou abrir as instruções de setup.
+          // Sem Firebase nesta "instância" (PWA tem localStorage separado do
+          // Safari no iPhone — quem configurou no Safari não tem config aqui).
+          // 3 caminhos: colar link de convite, configurar do zero, ou abrir
+          // pelo Safari.
           var hint=$('#cl-welcome-hint');
           if(hint){
-            hint.innerHTML='Este Plotti ainda não foi configurado. '+
-              '<strong>Peça o link de convite</strong> a quem criou a viagem &mdash; '+
-              'ao abrir o convite, o login Google passa a funcionar.<br>'+
-              '<a href="#" id="cl-welcome-setup" style="color:var(--olive);font-weight:600;text-decoration:underline">Sou o gerente · configurar agora</a>';
+            var pwaNote = isStandalonePWA()
+              ? '<p style="margin:0 0 10px;font-size:12px;color:var(--ink-muted)">No iPhone, o app instalado tem mem&oacute;ria separada do Safari &mdash; se voc&ecirc; j&aacute; configurou no Safari, cole abaixo o link de convite (gerado l&aacute; em Mais &rarr; Nuvem &amp; Login &rarr; <strong>Copiar link</strong>).</p>'
+              : '<p style="margin:0 0 10px;font-size:12px;color:var(--ink-muted)">Pe&ccedil;a o link de convite a quem criou a viagem &mdash; ao abrir o convite, o login Google passa a funcionar.</p>';
+            hint.innerHTML = pwaNote +
+              '<input id="cl-welcome-invite" type="text" placeholder="cole aqui o link de convite (https://...#join=...)" style="width:100%;max-width:420px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:12px;margin-bottom:8px">'+
+              '<button id="cl-welcome-apply" class="x2-btn-primary" style="max-width:200px;margin:0 auto 14px;display:block">Aplicar link e entrar</button>'+
+              '<a href="#" id="cl-welcome-setup" style="color:var(--olive);font-weight:600;text-decoration:underline;font-size:13px">Sou o gerente &middot; configurar do zero</a>';
             hint.style.fontSize='13px';
             hint.style.color='var(--ink-soft)';
             hint.style.marginTop='14px';
             hint.style.lineHeight='1.5';
+            hint.style.textAlign='center';
             var s=$('#cl-welcome-setup'); if(s) s.onclick=function(ev){ ev.preventDefault();
               try{ state.maisSub='nuvem'; saveState(); G.goTo&&G.goTo('mais'); }catch(_){}
+            };
+            var ap=$('#cl-welcome-apply'); if(ap) ap.onclick=function(){
+              var raw=(($('#cl-welcome-invite')||{}).value||'').trim();
+              var m=/[#&?]join=([^&\s]+)/.exec(raw) || (raw.length>40 ? [null, raw] : null);
+              if(!m){ alert('Cole o link inteiro de convite (deve conter "#join=...").'); return; }
+              try{
+                var data=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));
+                if(!data || !data.fb || !data.fb.apiKey || !data.fb.projectId){ alert('Link de convite invalido ou incompleto.'); return; }
+                setFbCfg(data.fb);
+                toast('Configura&ccedil;&atilde;o aplicada');
+                ap.disabled=true; ap.textContent='Carregando Firebase&hellip;';
+                prewarmFirebase().then(function(){ checkRedirect(); googleSignIn().catch(function(e){ var msg=friendlyAuthErr(e); if(msg) alert(msg); }); });
+              }catch(e){ alert('Nao consegui ler o link: '+(e.message||e)); }
             };
           }
           return;
         }
-        var _gb=this; _gb.textContent='Abrindo Google…';
-        googleSignIn().catch(function(e){ try{ _gb.textContent='Entrar com Google'; }catch(_){} alert('Não consegui abrir o login Google: '+(e&&e.message||e)+'\nTente de novo — e libere popups para este site.'); });
+        var _gb=this; _gb.textContent='Abrindo Google…'; _gb.disabled=true;
+        // Em iOS o caminho é redirect (signInWithRedirect navega a página
+        // inteira — não há "abertura" a esperar). O texto "Abrindo Google…"
+        // some quando a página recarrega no Google.
+        googleSignIn().catch(function(e){
+          try{ _gb.textContent='Entrar com Google'; _gb.disabled=false; }catch(_){}
+          var msg=friendlyAuthErr(e); if(msg) alert(msg);
+        });
       };
     }
     var origRW=G.renderWelcome;
@@ -1525,11 +1607,17 @@
     }catch(e){}
     /* ---------- arranque ---------- */
     acceptInvite(); // link de convite traz a config; salva e segue para o login
-    if(fbCfg()){ checkRedirect(); }
+    if(fbCfg()){
+      // Pré-aquece os imports do Firebase ANTES do usuário tocar em "Entrar
+      // com Google" — sem isso o popup quebra (gesto do clique perdido durante
+      // os ~500ms-2s dos dynamic imports).
+      prewarmFirebase();
+      checkRedirect();
+    }
     try{
       var cur=document.querySelector('.view.active');
       if(cur&&cur.dataset.view==='mais') G.renderMais();
     }catch(e){}
-    console.log('[PT-2026] cloud.js v3.1 — '+(fbCfg()?'Firebase configurado':'modo nativo')+' · integrações ativas');
+    console.log('[Plotti] cloud.js v3.2 — '+(fbCfg()?'Firebase configurado':'modo nativo')+(shouldUseRedirect()?' · login via redirect (PWA iOS)':' · login via popup')+' · integrações ativas');
   }
 })();
