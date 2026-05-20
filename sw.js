@@ -1,5 +1,5 @@
-// Plotti Service Worker · v7.1 · overlay "finalizando login" + diagnóstico no console
-const VERSION = 'plotti-v7.1';
+// Plotti Service Worker · v7.2 · GIS inline login iOS (sem popup, sem redirect)
+const VERSION = 'plotti-v7.2';
 const CORE = [
   './',
   './index.html',
