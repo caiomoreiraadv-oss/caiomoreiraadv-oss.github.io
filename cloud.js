@@ -113,6 +113,7 @@
         if(data && data.fb && data.fb.apiKey && data.fb.projectId){
           if(!fbCfg()) setFbCfg(data.fb); // não sobrescreve quem já é gerente
           try{ history.replaceState(null,'',location.pathname); }catch(e){}
+           try{ location.hash='#mais'; }catch(e){}
           setTimeout(function(){ toast('Convite aceito — entre com Google'); }, 600);
           return true;
         }
