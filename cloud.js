@@ -97,12 +97,20 @@
 
     /* ---------- config Firebase ---------- */
     var FB_KEY='pt2026:fb:cfg', ME_KEY='pt2026:fb:me', SHARE_KEY='pt2026:fb:share';
+    var GIS_KEY='pt2026:google:clientid'; // Web Client ID p/ Google Identity Services (login iOS-friendly)
     function fbCfg(){ try{ return JSON.parse(localStorage.getItem(FB_KEY)||'null'); }catch(e){ return null; } }
     function setFbCfg(o){ localStorage.setItem(FB_KEY, JSON.stringify(o)); }
+    function gisClientId(){ try{ return localStorage.getItem(GIS_KEY)||''; }catch(e){ return ''; } }
+    function setGisClientId(v){ try{ if(v) localStorage.setItem(GIS_KEY,v); else localStorage.removeItem(GIS_KEY); }catch(e){} }
     var FB=null, fbReady=false, fbErr=null;
     function buildInvite(){
       var cfg=fbCfg(); if(!cfg) return '';
-      try{ var p=btoa(unescape(encodeURIComponent(JSON.stringify({fb:cfg,t:TRIP})))); return location.origin+location.pathname+'#join='+p; }
+      try{
+        var payload={fb:cfg,t:TRIP};
+        var cid=gisClientId(); if(cid) payload.gid=cid;
+        var p=btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+        return location.origin+location.pathname+'#join='+p;
+      }
       catch(e){ return ''; }
     }
     function acceptInvite(){
@@ -112,6 +120,7 @@
         var data=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));
         if(data && data.fb && data.fb.apiKey && data.fb.projectId){
           if(!fbCfg()) setFbCfg(data.fb); // não sobrescreve quem já é gerente
+          if(data.gid && !gisClientId()) setGisClientId(data.gid); // Client ID p/ login iOS via GIS
           try{ history.replaceState(null,'',location.pathname); }catch(e){}
            try{ location.hash='#mais'; }catch(e){}
           setTimeout(function(){ toast('Convite aceito — entre com Google'); }, 600);
@@ -166,6 +175,7 @@
     function shouldUseRedirect(){ return isIOS(); }
     function friendlyAuthErr(e){
       var code=(e && (e.code||e.message))||'';
+      if(/NO_GIS_CLIENT_ID/.test(code)) return 'No iPhone, o login Google precisa do Web Client ID configurado em Mais → Nuvem & Login. Toque em "Sou o gerente · configurar agora" e siga as instruções.';
       if(/popup-blocked|popup_blocked/i.test(code)) return 'Seu navegador bloqueou a janela do Google. Tentando outro caminho…';
       if(/popup-closed-by-user|cancelled-popup-request|popup_closed/i.test(code)) return '';
       if(/unauthorized-domain/i.test(code)) return 'Este endereço não está autorizado no Firebase. O gerente precisa adicionar "'+location.hostname+'" em Firebase → Authentication → Settings → Authorized domains.';
@@ -179,11 +189,95 @@
     // toca em "Entrar com Google" antes disso, o popup quebra (gesto perdido).
     var fbPrewarm=null;
     function prewarmFirebase(){ if(!fbPrewarm) fbPrewarm=loadFirebase().catch(function(){}); return fbPrewarm; }
+
+    /* ---------- GIS: Google Identity Services (login iOS-friendly) ----------
+       O Firebase signInWithRedirect quebra em Safari iOS por ITP (storage
+       cross-origin bloqueado entre firebaseapp.com e github.io). GIS é o
+       caminho oficial pra contornar isso: faz auth INLINE, no mesmo origin,
+       sem popup nem redirect. Devolve um ID token JWT que o Firebase aceita
+       via signInWithCredential. Funciona em Safari iOS e PWA standalone.
+       Único custo: o gerente precisa colar o "Web Client ID" do Firebase
+       Console em Mais → Nuvem & Login (uma vez; é distribuído no convite). */
+    var gisLoadP=null;
+    function loadGIS(){
+      if(window.google && window.google.accounts && window.google.accounts.id) return Promise.resolve();
+      if(gisLoadP) return gisLoadP;
+      gisLoadP=new Promise(function(res, rej){
+        var existing=document.querySelector('script[src*="gsi/client"]');
+        if(existing){ existing.addEventListener('load', res); existing.addEventListener('error', rej); return; }
+        var s=document.createElement('script');
+        s.src='https://accounts.google.com/gsi/client'; s.async=true; s.defer=true;
+        s.onload=function(){ res(); }; s.onerror=function(){ rej(new Error('Falha ao carregar Google Identity Services')); };
+        document.head.appendChild(s);
+      });
+      return gisLoadP;
+    }
+    function gisSignIn(buttonHostEl){
+      var cid=gisClientId();
+      console.log('[Plotti] gisSignIn: clientId='+(cid?'SET':'MISSING'));
+      if(!cid) return Promise.reject(new Error('NO_GIS_CLIENT_ID'));
+      return Promise.all([loadGIS(), loadFirebase()]).then(function(arr){
+        var fb=arr[1];
+        return new Promise(function(res, rej){
+          var done=false;
+          function fail(e){ if(done) return; done=true; console.warn('[Plotti] gisSignIn fail:', e); rej(e); }
+          function ok(credential){
+            if(done) return; done=true;
+            console.log('[Plotti] GIS credential recebida, signInWithCredential…');
+            var cred=fb.a.GoogleAuthProvider.credential(credential);
+            fb.a.signInWithCredential(fb.auth, cred).then(function(r){ captureToken(fb,r); res(r); }).catch(fail);
+          }
+          try{
+            window.google.accounts.id.initialize({
+              client_id: cid,
+              callback: function(response){
+                if(!response || !response.credential){ fail(new Error('Resposta GIS sem credencial')); return; }
+                ok(response.credential);
+              },
+              auto_select: false,
+              cancel_on_tap_outside: false,
+              context: 'signin'
+            });
+            // Tenta One Tap. Se não puder, renderiza botão Google no host.
+            window.google.accounts.id.prompt(function(notification){
+              try{
+                var skipped = (notification.isNotDisplayed && notification.isNotDisplayed())
+                           || (notification.isSkippedMoment && notification.isSkippedMoment());
+                if(skipped){
+                  console.log('[Plotti] GIS One Tap não disponível — renderizando botão');
+                  if(buttonHostEl){
+                    buttonHostEl.innerHTML='';
+                    window.google.accounts.id.renderButton(buttonHostEl, {
+                      theme:'filled_blue', size:'large', text:'signin_with', shape:'pill', width: Math.min(320, buttonHostEl.clientWidth||320)
+                    });
+                  } else {
+                    fail(new Error('Login Google indisponível — toque novamente para tentar'));
+                  }
+                }
+              }catch(e){ /* alguns navegadores não dão notification — ignora */ }
+            });
+            // safety timeout: 60s sem callback → falha
+            setTimeout(function(){ if(!done) fail(new Error('Tempo esgotado aguardando Google')); }, 60000);
+          }catch(e){ fail(e); }
+        });
+      });
+    }
     function googleSignIn(opts){
       opts=opts||{};
+      // Em iOS, o caminho ÚNICO que funciona é GIS (Google Identity Services):
+      // sem popup, sem redirect, sem storage cross-origin. Safari ITP bloqueia
+      // o caminho do Firebase (popup E redirect). Se não há Client ID, falha
+      // explícita pedindo pra configurar.
+      if(isIOS()){
+        if(gisClientId()){
+          console.log('[Plotti] googleSignIn: usando GIS (iOS)');
+          return gisSignIn(opts.gisHost||null);
+        }
+        console.warn('[Plotti] googleSignIn: iOS sem Client ID — bloqueando popup/redirect (Safari ITP quebra ambos)');
+        return Promise.reject(new Error('NO_GIS_CLIENT_ID'));
+      }
       var useRedirect=opts.forceRedirect || shouldUseRedirect();
-      console.log('[Plotti] googleSignIn: useRedirect='+useRedirect+' FB='+!!FB);
-      // Se Firebase já está carregado (FB!=null), o caminho é síncrono no clique.
+      console.log('[Plotti] googleSignIn: useRedirect='+useRedirect+' FB='+!!FB+' gisClientId='+!!gisClientId());
       var p = FB ? Promise.resolve(FB) : loadFirebase();
       return p.then(function(fb){
         var prov=new fb.a.GoogleAuthProvider();
@@ -196,7 +290,6 @@
         console.log('[Plotti] signInWithPopup…');
         return fb.a.signInWithPopup(fb.auth, prov).then(function(res){ captureToken(fb,res); }).catch(function(e){
           var c=(e&&e.code)||'';
-          // Popup falhou por ambiente (bloqueado / não suportado): cai para redirect.
           if(/popup-blocked|operation-not-supported-in-this-environment|web-storage-unsupported/i.test(c)){
             console.warn('[Plotti] popup falhou ('+c+') — caindo para redirect');
             try{ sessionStorage.setItem(AUTH_PENDING_KEY,'1'); }catch(e){}
@@ -901,6 +994,16 @@
           '</div>'+
           '<p class="text-muted text-small" style="margin-top:6px">Use o seu Gmail para você; cada um entra com a própria conta Google. O lugar de cada um é definido por ordem de entrada.</p></div>';
       }
+      // Login Google direto no iPhone (sem redirect) via Google Identity Services
+      html+='<div class="tl-card" style="margin-top:14px;border:1px solid var(--olive,#5E7355)"><div class="eyebrow" style="color:var(--olive,#5E7355)">Login iPhone &middot; sem redirect</div>'+
+        '<p class="text-soft text-small" style="margin-top:6px">No iPhone, o Safari bloqueia o login Google via redirect (proteção ITP). Para destravar, cole aqui o <strong>Web Client ID</strong> do seu projeto:</p>'+
+        '<p class="text-muted text-small" style="margin:6px 0">Firebase Console &rarr; <strong>Authentication</strong> &rarr; <strong>Sign-in method</strong> &rarr; clique em <strong>Google</strong> &rarr; expanda <strong>Web SDK configuration</strong> &rarr; copie o <strong>Web client ID</strong> (termina em <code>.apps.googleusercontent.com</code>).</p>'+
+        '<input id="gis-in" class="x2-in" style="margin-top:8px" placeholder="'+(gisClientId()? esc(gisClientId().slice(0,20))+'…  (configurado)':'1234567890-xxxxxxxx.apps.googleusercontent.com')+'">'+
+        '<div class="tl-actions">'+
+          '<button class="tl-action primary" id="gis-save">'+ic('check')+'<span>Salvar Client ID</span></button>'+
+          (gisClientId()?'<button class="tl-action" id="gis-clear">'+ic('warn')+'<span>Remover</span></button>':'')+
+        '</div>'+
+        '<p class="text-muted text-small" style="margin-top:8px">Ao salvar, o iPhone passa a logar sem sair do app. O Client ID vai junto no <strong>link de convite</strong>, então os 4 viajantes não precisam configurar de novo.</p></div>';
       html+='<div class="tl-card" style="margin-top:14px"><div class="eyebrow">Assistente "Saiba mais" (IA) · opcional</div>'+
         '<p class="text-soft text-small" style="margin-top:6px">Cole uma chave <strong>Google Gemini</strong> (grátis, sem cartão) e o botão "Saiba mais" do roteiro passa a responder perguntas e analisar fotos dentro do app. Sem chave, ele só abre buscas externas.</p>'+
         '<input id="ai-in" class="x2-in" style="margin-top:8px" placeholder="'+(aiKey()?'•••• configurada — cole outra p/ trocar':'AIza... (cole a chave)')+'">'+
@@ -923,6 +1026,12 @@
       })();
       var as=$('#ai-save'); if(as) as.onclick=function(){ var v=($('#ai-in').value||'').trim(); if(v.length<20){ toast('Cole a chave Gemini completa'); return; } try{ localStorage.setItem(AI_KEY,v); }catch(e){} toast('Assistente ativado'); scrNuvem(); };
       var ac=$('#ai-clear'); if(ac) ac.onclick=function(){ try{ localStorage.removeItem(AI_KEY); }catch(e){} toast('Assistente removido'); scrNuvem(); };
+      var gss=$('#gis-save'); if(gss) gss.onclick=function(){
+        var v=(($('#gis-in')||{}).value||'').trim();
+        if(!/\.apps\.googleusercontent\.com$/.test(v)){ alert('Cole o Client ID inteiro (precisa terminar em .apps.googleusercontent.com).'); return; }
+        setGisClientId(v); toast('Client ID salvo — agora "Entrar com Google" loga sem sair do app'); scrNuvem();
+      };
+      var gsc=$('#gis-clear'); if(gsc) gsc.onclick=function(){ setGisClientId(''); toast('Client ID removido'); scrNuvem(); };
 
       var sv=$('#fb-save'); if(sv) sv.onclick=function(){
         var raw=($('#fb-in').value||'').trim();
@@ -934,8 +1043,15 @@
       };
       var hp=$('#fb-help'); if(hp) hp.onclick=function(){ fbHelpModal(); };
       var lg=$('#fb-login'); if(lg) lg.onclick=function(){
-        lg.textContent='Abrindo Google…'; lg.disabled=true;
-        googleSignIn().then(function(){ /* popup: sucesso já trata via onAuthStateChanged. redirect: a página vai recarregar. */ }).catch(function(e){
+        lg.textContent=(isIOS()&&gisClientId())?'Pedindo login ao Google…':'Abrindo Google…';
+        lg.disabled=true;
+        googleSignIn({ gisHost: lg.parentNode }).then(function(){ /* sucesso já trata via onAuthStateChanged */ }).catch(function(e){
+          var em=(e&&e.message)||'';
+          if(em==='NO_GIS_CLIENT_ID'){
+            alert('No iPhone, configure o Web Client ID primeiro (campo logo abaixo).');
+            try{ lg.textContent='Entrar com Google'; lg.disabled=false; }catch(_){}
+            return;
+          }
           var msg=friendlyAuthErr(e); if(msg) alert(msg);
           try{ lg.disabled=false; }catch(_){}
           scrNuvem();
@@ -1347,12 +1463,22 @@
           }
           return;
         }
-        var _gb=this; _gb.textContent='Abrindo Google…'; _gb.disabled=true;
-        // Em iOS o caminho é redirect (signInWithRedirect navega a página
-        // inteira — não há "abertura" a esperar). O texto "Abrindo Google…"
-        // some quando a página recarrega no Google.
-        googleSignIn().catch(function(e){
+        var _gb=this;
+        // Em iOS com GIS configurado: login INLINE (sem sair do app). O botão
+        // pode ser substituído pelo "Sign in with Google" renderizado pela GIS
+        // se One Tap não estiver disponível — daí passamos o parent como host.
+        var iosGIS = isIOS() && gisClientId();
+        _gb.textContent= iosGIS ? 'Pedindo login ao Google…' : 'Abrindo Google…';
+        _gb.disabled=true;
+        googleSignIn({ gisHost: _gb.parentNode }).catch(function(e){
           try{ _gb.textContent='Entrar com Google'; _gb.disabled=false; }catch(_){}
+          var em=(e&&e.message)||'';
+          if(em==='NO_GIS_CLIENT_ID'){
+            // iOS sem clientId: orienta o gerente
+            var hint=$('#cl-welcome-hint');
+            if(hint){ hint.innerHTML='Para logar no iPhone sem sair do app, o gerente precisa colar o <strong>Web Client ID</strong> em Mais &rarr; Nuvem &amp; Login (s&oacute; uma vez). Veja as instru&ccedil;&otilde;es l&aacute;.'; hint.style.color='var(--terra,#C25E3D)'; hint.style.marginTop='12px'; }
+            return;
+          }
           var msg=friendlyAuthErr(e); if(msg) alert(msg);
         });
       };
