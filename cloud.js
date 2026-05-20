@@ -1499,7 +1499,10 @@
             console.warn('[Plotti] anonSignIn falhou:', e);
             var h=$('#cl-welcome-anon-err');
             var msg=friendlyAuthErr(e) || ('Não consegui entrar: '+(e&&e.message||e));
-            if(h){ h.style.display='block'; h.innerHTML=msg; }
+            // Mostrar TAMBÉM o código técnico do Firebase pra diagnóstico
+            // direto (sem precisar abrir DevTools).
+            var raw=(e && (e.code||e.message))||'desconhecido';
+            if(h){ h.style.display='block'; h.innerHTML=msg+'<div style="margin-top:10px;padding:8px 10px;background:rgba(0,0,0,.18);border-radius:8px;font-family:JetBrains Mono,monospace;font-size:11px;color:var(--ink-muted,#a89e88);text-align:left;word-break:break-word">código técnico: '+esc(String(raw))+'</div>'; }
             try{ b.textContent=orig; b.disabled=false; box.querySelectorAll('[data-anon-slot]').forEach(function(x){ x.disabled=false; }); }catch(_){}
           });
         };
