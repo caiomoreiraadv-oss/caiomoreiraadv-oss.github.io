@@ -1,5 +1,5 @@
-// Plotti Service Worker · v7.4 · reset estado dos botões do welcome ao re-render
-const VERSION = 'plotti-v7.4';
+// Plotti Service Worker · v7.5 · código técnico do Firebase exposto em tela
+const VERSION = 'plotti-v7.5';
 const CORE = [
   './',
   './index.html',
